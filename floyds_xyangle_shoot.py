@@ -55,3 +55,15 @@ for ax, i in zip(axes.flatten(), range(len(env_parameters[0]))):
 
 plt.show()
 #%%
+#divide one flat by another without shifting
+div_im = np.divide(images[0],images[1])
+median = np.median(div_im)
+std = np.std(div_im)
+plt.imshow(div_im, origin='lower', vmin=median-2*std, vmax = median+2*std)
+plt.title('Two flats divided')
+plt.xlabel(f'ALTAZ1 = {}, ALTAZ2 = {}')
+plt.colorbar()
+plt.show()
+
+#And then shift it a little
+
