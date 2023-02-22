@@ -10,14 +10,14 @@ import matplotlib.pyplot as plt
 import numpy as np
 from glob import glob
 #%%
-red_lamp_files = glob('ttflat*red*.fits', recursive=True)
-blue_lamp_files = glob('ttflat*blue*.fits', recursive=True)
-red_spectrum_files = glob('ttGD71*red*.fits', recursive=True)
-blue_spectrum_files = glob('ttGD71*red*.fits', recursive=True)
+red_lamp_files = sorted(glob('ttflat*red*.fits', recursive=True))
+blue_lamp_files = sorted(glob('ttflat*blue*.fits', recursive=True))
+red_spectrum_files = sorted(glob('nttGD71*red*.fits', recursive=True))
+blue_spectrum_files = sorted(glob('nttGD71*red*.fits', recursive=True))
 
-files = blue_lamp_files
+files = red_spectrum_files
 images = [fits.open(f)[0].data for f in files]
-data_type = 'blue lampflats'
+data_type = 'red spectrum'
 #%%
 for i, im in enumerate(images):
     plt.imshow(im)
@@ -55,6 +55,7 @@ plt.ylabel('Power')
 plt.show()
 #%% For every image create the power spectrum
 width = np.shape(images[0])[1]
+fringe_freq = []
 for image in images:
     mean_linecut = np.mean(image,axis=0)
     N = 1*width
@@ -72,11 +73,13 @@ for image in images:
     plt.ylabel('Power')
     plt.show()
     
+    fringe_freq.append(frequency[np.argmax(power)])
     print(f'best frequency {frequency[np.argmax(power)]}')
 
 #%% Telescope parameters
 header_values = ['UTSTART', 'EXPTIME', 'AZIMUTH', 'ALTITUDE', 'ROTANGLE', 'APERWID', 'CCDATEMP']
 headers = [fits.open(f)[0].header for f in files]
+sorting_idx = np.argsort([header['UTSTART'] for header in headers])
 
 env_parameters = []
 for header in headers:
@@ -88,12 +91,12 @@ env_parameters = np.array(env_parameters)
 fig, axes = plt.subplots(2, 3, sharex=True, figsize=(30,20))
 fig.tight_layout(pad = 10)
 x = np.arange(len(env_parameters))
+#x = np.sort([header['UTSTART'] for header in headers])
 for ax, i in zip(axes.flatten(), range(len(env_parameters[0]))):
-    ax.scatter(x, env_parameters[:,i], s=15)
+    ax.scatter(x, env_parameters[:,i][sorting_idx], s=15)
     ax.set_ylabel(header_values[i], fontsize=20)
     ax.set_xlabel('Image Number', fontsize=20)
     ax.tick_params(axis='both', which='major', labelsize=14, size=10)
-    #ax.yaxis.set_major_formatter('{x:5.1f}')
 
 plt.show()
 #%% Fringing residuals
@@ -109,3 +112,16 @@ for i, im in enumerate(images):
     plt.colorbar()
     plt.title(f'{data_type} {i}, residual')
     plt.show()
+#%%
+fig = plt.figure(figsize=(10,10), dpi=100)
+ax = fig.add_subplot(111, projection='3d')
+azimuth = np.array(env_parameters[:,2], dtype='float')
+altitude = np.array(env_parameters[:,3], dtype='float')
+rotangle = np.array(env_parameters[:,4], dtype='float')
+img = ax.scatter(azimuth, altitude, rotangle, c=fringe_freq, vmin=0.0354, vmax=0.0355)
+ax.set_xlabel('Azimuth')
+ax.set_ylabel('Altitude')
+ax.set_zlabel('Rotangle')
+cb = fig.colorbar(img)
+cb.ax.set_ylabel('fringe frequency', rotation=270)
+plt.show()
