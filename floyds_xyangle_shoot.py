@@ -12,7 +12,7 @@ import numpy as np
 from glob import glob
 #%%
 #Non-rectified spectrum
-files = sorted(glob('flat*red_2.0*.fits', recursive=True))
+files = sorted(glob('New_AltAz_data/ogg2m001-en06*-w00.fits.fz', recursive=True))
 images = [fits.open(f)[0].data for f in files]
 data_type = 'red flat'
 #%%
