@@ -141,7 +141,7 @@ plt.title('Flatted flat, one rotated by 0.01, shifted up 1')
 plt.xlabel(f'ALTAZROT1 : ({alt1:.2f}, {az1:.2f}, {rot1:0.2f}), ALTAZROT2 : ({alt2:.2f}, {az2:.2f}, {rot2:0.2f})')
 plt.colorbar()
 fig.show()
-#%% Shift and rotate with very different
+#%% Shift and rotate with very different altazrot
 im_new = xy_shift(images[0], 1, 1, x_up=False, y_up=True)
 im_new = rotate(im_new, 0.1, True)
 div_im = np.divide(im_new,images[-1])
@@ -154,3 +154,4 @@ plt.title('Flatted flat, one rotated by 0.1, shifted up and left 1')
 plt.xlabel(f'ALTAZROT1 : ({alt1:.2f}, {az1:.2f}, {rot1:0.2f}), ALTAZROT2 : ({alt2:.2f}, {az2:.2f}, {rot2:0.2f})')
 plt.colorbar()
 fig.show()
+#%% Distort image for template matching
