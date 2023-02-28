@@ -12,9 +12,14 @@ import numpy as np
 from glob import glob
 #%%
 #Non-rectified spectrum
-files = sorted(glob('lco_data-20230216-33/lco_data-20230216-33/flat*red_*.fits', recursive=True))
-#files = sorted(glob('New_AltAz_data/ogg2m001-*w00.fits.fz', recursive=True))
-images = [fits.open(f)[0].data for f in files]
+#files = sorted(glob('lco_data-20230216-33/lco_data-20230216-33/flat*red_*.fits', recursive=True))
+files = sorted(glob('New_AltAz_data/*.fits.fz', recursive=True))
+images = []
+for f in files:
+    try:
+        images.append(fits.open(f))
+    except OSError:
+        print(f)
 data_type = 'red flat'
 #%%
 for i, im in enumerate(images):
