@@ -82,13 +82,21 @@ for i in range(len(altitude)):
     for k in range(len(altitude)):
         dist = (altitude[i]-altitude[k])**2 + (rotangle[i]-rotangle[k])**2
     if dist > 1:
-        print(i)
         unique_coords.append(df.index[i])
 #%% download the frames that are unique
+import multiprocessing
+
 doubles_path = 'New_AltAz_data'
-for frame_id in unique_coords:
-    archive_record = requests.get(f'https://archive-api.lco.global/frames/?instrument_id=en06&site_id=ogg&start=2022-01-01&end=2023-01-01&configuration_type=LAMPFLAT&id{frame_id}&public=True&limit=1000', headers={'Authorization': 'Token 9b605ef2229d317ba1b031b54f2a0115aec69b9f'}).json()['results']
-    for rec in archive_record:
-        #Give path to write files to
-        with open(f'{doubles_path}/{rec["filename"]}', 'wb') as f:
-            f.write(requests.get(rec['url']).content)
+def download_file(records):
+    for frame_id in records:
+        archive_record = requests.get(f'https://archive-api.lco.global/frames/?instrument_id=en06&site_id=ogg&start=2022-01-01&end=2023-01-01&configuration_type=LAMPFLAT&id{frame_id}&public=True&limit=1000', headers={'Authorization': 'Token 9b605ef2229d317ba1b031b54f2a0115aec69b9f'}).json()['results']
+        for rec in archive_record:
+            #Give path to write files to
+            with open(f'{doubles_path}/{rec["filename"]}', 'wb') as f:
+                f.write(requests.get(rec['url']).content)
+            
+N_PROCESSES = multiprocessing.cpu_count()
+with multiprocessing.Pool(N_PROCESSES) as pool:
+    pool.map(download_file, unique_coords)
+    pool.close()
+    pool.join()
