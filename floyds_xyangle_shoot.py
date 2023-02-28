@@ -12,7 +12,8 @@ import numpy as np
 from glob import glob
 #%%
 #Non-rectified spectrum
-files = sorted(glob('New_AltAz_data/ogg2m001-en06*-w00.fits.fz', recursive=True))
+files = sorted(glob('lco_data-20230216-33/lco_data-20230216-33/flat*red_*.fits', recursive=True))
+#files = sorted(glob('New_AltAz_data/ogg2m001-*w00.fits.fz', recursive=True))
 images = [fits.open(f)[0].data for f in files]
 data_type = 'red flat'
 #%%
@@ -129,7 +130,7 @@ plt.xlabel(f'ALTAZROT1 : ({alt1:.2f}, {az1:.2f}, {rot1:0.2f}), ALTAZROT2 : ({alt
 plt.colorbar()
 fig.show()
 #%% Shift AND Rotate
-im_new = xy_shift(images[im1_num], 0, 1, x_up=False, y_up=True)
+im_new = xy_shift(images[im1_num], 1, 0, x_up=True, y_up=True)
 im_new = rotate(im_new, 0.01, True)
 div_im = np.divide(im_new,images[im2_num])
 
@@ -137,7 +138,7 @@ median = np.median(div_im)
 std = np.std(div_im)
 fig = plt.figure(figsize=(7.5,5), dpi=200)
 plt.imshow(div_im, origin='lower', vmin=median-1*std, vmax = median+1*std)
-plt.title('Flatted flat, one rotated by 0.01, shifted up 1')
+plt.title('Flatted flat, one rotated by 0.01, shifted right 1')
 plt.xlabel(f'ALTAZROT1 : ({alt1:.2f}, {az1:.2f}, {rot1:0.2f}), ALTAZROT2 : ({alt2:.2f}, {az2:.2f}, {rot2:0.2f})')
 plt.colorbar()
 fig.show()
