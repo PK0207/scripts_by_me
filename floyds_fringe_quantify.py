@@ -11,6 +11,7 @@ import numpy as np
 from glob import glob
 from scipy.fft import fft, fftfreq
 import numpy.ma as ma
+from scipy.signal import convolve, correlate
 #%%
 #files = sorted(glob('lco_data-20230216-33/lco_data-20230216-33/flat*red_*.fits', recursive=True))
 files = sorted(glob('New_AltAz_data/ogg2m001-*w00.fits.fz', recursive=True))
@@ -188,7 +189,7 @@ plt.show()
 #%% shift in x and y until fringing is minimized, then map out shift on sky
 
 #Shift in every direction by 1 pixel
-shift_num = 2
+shift_num = 4
 
 shift_dict = {'north': xy_shift(images[im1_num], 0, shift_num, y_up=True), 
               'northeast': xy_shift(images[im1_num],shift_num,shift_num, x_up=True, y_up=True), 
@@ -205,7 +206,7 @@ az1 = azimuth[0]
 rot1 = rotangle[0]
 #Shift every image relative to the first image, in every direction
 best_shift = []
-for i in range(len(images[:5])):
+for i in range(len(images[:1])):
     im1_num = i
     alt2 = altitude[i]
     az2 = azimuth[i]
@@ -236,3 +237,28 @@ for i in range(len(images[:5])):
         plt.colorbar()
         plt.show()
     best_shift.append(list(shift_dict)[np.argmin(fringe_amount)])
+#%% Windowed wavelet quantify fringing
+def normalize(data):
+    min_data = min(data)
+    max_data = max(data)
+    new_data = [(i-min_data)/(max_data-min_data) for i in data]
+    return new_data
+freq = 0.041
+length = (np.pi*2)*11.7
+#win = np.sin(np.arange(0, length, length/300) + 20)
+sig = normalize(images[1][200, 1200:1500])
+win = normalize(images[0][200, 1200:1500])
+filtered = convolve(sig, win, mode='same') / sum(win)
+
+fig, (ax_orig, ax_win, ax_filt) = plt.subplots(3, 1, sharex=True)
+ax_orig.plot(sig)
+ax_orig.set_title('Original pulse')
+ax_orig.margins(0, 0.1)
+ax_win.plot(win)
+ax_win.set_title('Filter impulse response')
+ax_win.margins(0, 0.1)
+ax_filt.plot(filtered)
+ax_filt.set_title('Filtered signal')
+ax_filt.margins(0, 0.1)
+fig.tight_layout()
+fig.show()
