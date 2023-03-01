@@ -14,10 +14,10 @@ red_lamp_files = sorted(glob('ttflat*red*.fits', recursive=True))
 blue_lamp_files = sorted(glob('ttflat*blue*.fits', recursive=True))
 red_spectrum_files = sorted(glob('nttGD71*red*.fits', recursive=True))
 blue_spectrum_files = sorted(glob('nttGD71*red*.fits', recursive=True))
-
-files = red_spectrum_files
+all_alt_az = sorted(glob('New_AltAz_data/*.fits.fz', recursive=True))
+files = all_alt_az
 images = [fits.open(f)[0].data for f in files]
-data_type = 'red spectrum'
+data_type = 'red flat'
 #%%
 for i, im in enumerate(images):
     plt.imshow(im)
@@ -78,8 +78,8 @@ for image in images:
 
 #%% Telescope parameters
 header_values = ['UTSTART', 'EXPTIME', 'AZIMUTH', 'ALTITUDE', 'ROTANGLE', 'APERWID', 'CCDATEMP']
-headers = [fits.open(f)[0].header for f in files]
-sorting_idx = np.argsort([header['UTSTART'] for header in headers])
+headers = [fits.open(f)['SCI'].header for f in files]
+
 
 env_parameters = []
 for header in headers:
@@ -88,15 +88,15 @@ for header in headers:
 env_parameters = np.array(env_parameters)
 
 #plt.style.use('seaborn')
-fig, axes = plt.subplots(2, 3, sharex=True, figsize=(30,20))
+fig, axes = plt.subplots(2, 3, figsize=(30,20))
 fig.tight_layout(pad = 10)
 x = np.arange(len(env_parameters))
 #x = np.sort([header['UTSTART'] for header in headers])
 for ax, i in zip(axes.flatten(), range(len(env_parameters[0]))):
-    ax.scatter(x, env_parameters[:,i][sorting_idx], s=15)
-    ax.set_ylabel(header_values[i], fontsize=20)
+    ax.scatter(x, env_parameters[:,i+1], s=15)
+    ax.set_ylabel(header_values[i+1], fontsize=20)
     ax.set_xlabel('Image Number', fontsize=20)
-    ax.tick_params(axis='both', which='major', labelsize=14, size=10)
+    #ax.tick_params(axis='both', which='major', labelsize=14, size=10)
 
 plt.show()
 #%% Fringing residuals
