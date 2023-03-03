@@ -12,14 +12,25 @@ from glob import glob
 from scipy.fft import fft, fftfreq
 import numpy.ma as ma
 from scipy.signal import convolve, correlate
+from datetime import datetime
 #%%
 #files = sorted(glob('lco_data-20230216-33/lco_data-20230216-33/flat*red_*.fits', recursive=True))
 files = sorted(glob('New_AltAz_data/ogg2m001-*w00.fits.fz', recursive=True))
 images = [fits.open(f)['SCI'].data for f in files]
+headers = [fits.open(f)['SCI'].header for f in files]
 data_type = 'red flat'
 #%% Select a subregion of this non-rectified flat
+def normalize(data):
+    min_data = min(data)
+    max_data = max(data)
+    new_data = [(i-min_data)/(max_data-min_data) for i in data]
+    return new_data
+
+times = times = np.sort([datetime.strptime(header['DATE-OBS'], '%Y-%m-%dT%H:%M:%S.%f') for header in headers])
+aperwid = [header['APERWID'] for header in headers]
+
 for i, im in enumerate(images[:10]):
-    plt.imshow(im[175:225, 1200:1500], origin='lower')
+    plt.imshow(im[140:190, 1100:1300], origin='lower')
     plt.colorbar()
     plt.title(f'{data_type}, {i} fringe region')
     plt.show()
@@ -29,21 +40,26 @@ for i, im in enumerate(images):
     # plt.plot(np.arange(300), im[200, 1200:1500])
     # plt.title(f'{data_type}, {i} fringe region linecut')
     # plt.show()
-    fringe_rms.append(np.std(im[200, 1200:1500]))
+    fringe_rms.append(np.std(normalize(im[165, 1100:1300])))
 #%% Plot std with image number
-plt.figure(dpi=200)
-plt.scatter(np.arange(len(images)), fringe_rms, s=5)
-plt.title('Fringe STD for each image')
-plt.xlabel('Image Number')
-plt.ylabel('Standard Deviation of the sub-region')
-plt.show()
+from matplotlib.dates import AutoDateLocator, ConciseDateFormatter
+fig, ax = plt.subplots(dpi=200)
+ax.scatter(times, fringe_rms, s=5, c=aperwid, cmap = 'tab20')
+locator = AutoDateLocator()
+formatter = ConciseDateFormatter(locator)
+ax.xaxis.set_major_locator(locator)
+ax.xaxis.set_major_formatter(formatter)
+ax.set_title('Fringe STD for each image')
+ax.set_xlabel('Image Number')
+ax.set_ylabel('Standard Deviation of the sub-region')
+fig.show()
 #%% Plot power spectrum
 width = np.shape(images[0])[1]
 fringe_freq = []
 fringe_power = []
 for image in images:
-    mean_linecut = np.mean(image,axis=0)
-    N = 1*width
+    mean_linecut = image[165, 1100:1300]
+    N = 1*200
     yf = fft(mean_linecut)
     xf = fftfreq(N)
     
@@ -64,7 +80,8 @@ for image in images:
     #print(f'Power at that frequency {np.max(power)}')
 #%% Plot power with image number
 plt.figure(dpi=200)
-plt.scatter(np.arange(len(images)), fringe_power, s=5, label=f'fringe frequency = {fringe_freq[0]}')
+plt.scatter(times, fringe_power, s=5, c=aperwid, cmap = 'tab20', label=f'fringe frequency = {fringe_freq[0]}')
+plt.colorbar()
 plt.title('Power of fringing from fft for each image')
 plt.xlabel('Image Number')
 plt.ylabel('Power of highest peak in fft')
@@ -238,11 +255,7 @@ for i in range(len(images[:1])):
         plt.show()
     best_shift.append(list(shift_dict)[np.argmin(fringe_amount)])
 #%% Windowed wavelet quantify fringing
-def normalize(data):
-    min_data = min(data)
-    max_data = max(data)
-    new_data = [(i-min_data)/(max_data-min_data) for i in data]
-    return new_data
+
 freq = 0.041
 length = (np.pi*2)*11.7
 #win = np.sin(np.arange(0, length, length/300) + 20)
