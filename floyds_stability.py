@@ -44,21 +44,21 @@ for image in images[:10]:
 aperwid = np.array([header['APERWID'] for header in headers])
 exptime = np.array([header['EXPTIME'] for header in headers])
 times = np.array([datetime.strptime(header['DATE-OBS'], '%Y-%m-%dT%H:%M:%S.%f') for header in headers])
+exp_80 = np.where([np.isclose(time, 80, atol = 1) for time in exptime])
 aperwid_2 = np.where(aperwid == 2)
 aperwid_16 = np.where(aperwid == 1.6)
 aperwid_12 = np.where(aperwid == 1.2)
 aperwid_6 = np.where(aperwid == 6)
-aperwid_2_images = np.array(images)[aperwid_2]
-aperwid_2_images = [image/exp for image, exp in zip(aperwid_2_images, exptime)]
+exp80_and_aperwid2 = np.intersect1d(aperwid_2, exp_80)
+aperwid_2_images = np.array(images)[exp80_and_aperwid2]
 #%%
-aperwid_2_times = times[aperwid_2]
+aperwid_2_times = times[exp80_and_aperwid2]
 
 red_mins = []
 red_maxs = []
 red_var = []
 
-blue_mins = []
-blue_maxs = []
+blue_means = []
 blue_var = []
 
 for image in aperwid_2_images:
@@ -70,8 +70,7 @@ for image in aperwid_2_images:
     blue_region = image[50:125, 250:500]
     blue_linecut = np.mean(blue_region, axis=0)
     blue_var.append(np.std(blue_linecut))
-    blue_maxs.append(max(blue_linecut))
-    blue_mins.append(min(blue_linecut))
+    blue_means.append(np.mean(blue_linecut))
 
 plt.figure(dpi=200)
 plt.title('Maximum and minimum value of red fringing area in every image')
@@ -86,10 +85,10 @@ plt.xticks(rotation=45)
 plt.show()
 
 plt.figure(dpi=200)
-plt.title('Maximum and minimum value of blue part of spectrum in every image')
-plt.scatter(aperwid_2_times, blue_maxs, label='Maxima', cmap = 'tab20', s=5)
-plt.scatter(aperwid_2_times, blue_mins, label='Minima', cmap = 'tab20', s=5)
-plt.legend()
+plt.title('Mean value of blue part of spectrum in every image')
+plt.scatter(aperwid_2_times, blue_means, label='Maxima', cmap = 'tab20', s=5)
+#plt.scatter(aperwid_2_times, blue_mins, label='Minima', cmap = 'tab20', s=5)
+#plt.legend()
 # cax = plt.colorbar()
 # cax.set_ticks([1.2, 1.6, 2.0, 6.0])
 plt.xlabel('Date Observation')
@@ -105,7 +104,7 @@ plt.ylabel('Pixel value')
 plt.xticks(rotation=45)
 plt.show()
 #%%
-red_lamp_files = sorted(glob('lco_data-20230216-33/ttflat*red*.fits', recursive=True))
+red_lamp_files = sorted(glob('lco_data-20230216-33/lco_data-20230216-33/ttflat*red*.fits', recursive=True))
 rectified_flats = [fits.open(f)[0].data for f in red_lamp_files]
 input_fringe = rectified_flats[0]
 correction_fringe_frame = rectified_flats[-1]
@@ -128,10 +127,10 @@ plt.colorbar(back, location='bottom', ax=ax3)
 ax3.axis('off')
 fig.show()
 #%%
-from scipy.optimize import minimize
+from scipy.optimize import minimize_scalar
 
 def iraf_defringe(s):
     result = np.mean((input_fringe-input_fringe_background - s*(correction_fringe_frame-np.mean(correction_fringe_frame)))*(correction_fringe_frame-np.mean(correction_fringe_frame)))
     return result
 
-res = minimize(iraf_defringe, 0.2816)
+res = minimize_scalar(iraf_defringe, bounds = (0.28, 0.3), method='bounded')
