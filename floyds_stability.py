@@ -104,7 +104,7 @@ plt.xlabel('Date Observation')
 plt.ylabel('Pixel value')
 plt.xticks(rotation=45)
 plt.show()
-#%%
+#%% IRAF defringing
 red_lamp_files = sorted(glob('lco_data-20230216-33/ttflat*red*.fits', recursive=True))
 rectified_flats = [fits.open(f)[0].data for f in red_lamp_files]
 input_fringe = rectified_flats[0]
