@@ -17,7 +17,7 @@ files = sorted(glob('New_AltAz_data/*.fits.fz', recursive=True))
 images = []
 for f in files:
     try:
-        images.append(fits.open(f))
+        images.append(fits.open(f)['SCI'].data)
     except OSError:
         print(f)
 data_type = 'red flat'
