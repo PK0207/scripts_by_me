@@ -17,7 +17,7 @@ from datetime import datetime
 import sys
 import matplotlib.pyplot as plt
 
-from banzai_floyds.orders import Orders, OrderLoader, OrderSolver
+from banzai_floyds.orders import Orders, OrderLoader, OrderTweaker, OrderSolver
 from banzai.calibrations import make_master_calibrations
 from banzai_floyds import settings
 from banzai import dbs
@@ -100,20 +100,11 @@ class FLOYDSPipeline():
             print('Please run the .setup_pipeline method before running the pipeline')
             sys.exit(-1)
             
-        frame_factory = FLOYDSFrameFactory()
-        skyflat = glob(f'{self.skyflats_path}/*.fz', recursive=True)
+        skyflat = glob('skyflats/ogg2m001-en06-20190329-0018-x00.fits.fz', recursive=True)
         skyflat_hdu = fits.open(skyflat[0])
         skyflat_hdu['SCI'].header['OBSTYPE'] = 'SKYFLAT'
         skyflat_hdu.writeto(skyflat[0], overwrite=True)
         skyflat_hdu.close()
-        
-        for image_path in skyflat:
-            print(image_path)
-            cal_image = self.frame_factory.open({'path': image_path}, self.context)
-            cal_image.is_master = True
-            dbs.save_calibration_info(cal_image.to_db_record(DataProduct(None, filename=os.path.basename(image_path),
-                                                                                filepath=os.path.dirname(image_path))),
-                                                                                os.environ['DB_ADDRESS'])
         
         overscan_subtract = OverscanSubtractor(self.context)
         trim = Trimmer(self.context)
@@ -121,11 +112,30 @@ class FLOYDSPipeline():
         uncertainty = PoissonInitializer(self.context)
         load_orders = OrderLoader(self.context)
         solve_orders = OrderSolver(self.context)
+        tweak_orders = OrderTweaker(self.context)
+        
+        for image_path in skyflat:
+            print(image_path)
+            cal_image = self.frame_factory.open({'path': image_path}, self.context)
+            cal_image.is_master = True
+            cal_image = overscan_subtract.do_stage(cal_image)
+            cal_image = trim.do_stage(cal_image)
+            cal_image = gain_norm.do_stage(cal_image)
+            print('uncertainty')
+            cal_image = uncertainty.do_stage(cal_image)
+            print('solve orders')
+            cal_image = solve_orders.do_stage(cal_image)
+            dbs.save_calibration_info(cal_image.to_db_record(DataProduct(None, filename=os.path.basename(image_path),
+                                                                                filepath=os.path.dirname(image_path))),
+                                                                                os.environ['DB_ADDRESS'])
+            cal_image.write(self.context)
+    
         
         files = glob(f'{self.lampflats_path}/*.fz', recursive=True)
         files = sorted(files)
         for path in files:
-            image = frame_factory.open({'path': path}, self.context)
+            image = self.frame_factory.open({'path': '/home/pkottapalli/FLOYDS/data/test_data/ogg/en06/20190329/processed/ogg2m001-en06-20190329-0018-x92.fits.fz'}, self.context)
+            skyflat_image = self.frame_factory.open({'path': skyflat[0]}, self.context)
             print(image.instrument)
             image = overscan_subtract.do_stage(image)
             image = trim.do_stage(image)
@@ -133,9 +143,9 @@ class FLOYDSPipeline():
             print('uncertainty')
             image = uncertainty.do_stage(image)
             print('load orders')
-            image = load_orders.do_stage(image)
+            image = load_orders.do_stage(skyflat_image)
             print('solve orders')
-            image = solve_orders.do_stage(image)
+            image = tweak_orders.do_stage(image)
             image.write(self.context)
 #%%
 pipeline = FLOYDSPipeline()
