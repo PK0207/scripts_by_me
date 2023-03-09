@@ -145,6 +145,8 @@ class FLOYDSPipeline():
             print('load orders')
             image = load_orders.do_stage(skyflat_image)
             print('solve orders')
+            image = solve_orders.do_stage(image)
+            print('tweak orders')
             image = tweak_orders.do_stage(image)
             image.write(self.context)
 #%%
