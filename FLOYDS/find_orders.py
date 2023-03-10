@@ -101,10 +101,6 @@ class FLOYDSPipeline():
             sys.exit(-1)
             
         skyflat = glob('skyflats/ogg2m001-en06-20190329-0018-x00.fits.fz', recursive=True)
-        skyflat_hdu = fits.open(skyflat[0])
-        skyflat_hdu['SCI'].header['OBSTYPE'] = 'SKYFLAT'
-        skyflat_hdu.writeto(skyflat[0], overwrite=True)
-        skyflat_hdu.close()
         
         overscan_subtract = OverscanSubtractor(self.context)
         trim = Trimmer(self.context)
@@ -116,14 +112,16 @@ class FLOYDSPipeline():
         
         for image_path in skyflat:
             print(image_path)
+            skyflat_hdu = fits.open(image_path)
+            skyflat_hdu['SCI'].header['OBSTYPE'] = 'SKYFLAT'
+            skyflat_hdu.writeto(image_path, overwrite=True)
+            skyflat_hdu.close()
             cal_image = self.frame_factory.open({'path': image_path}, self.context)
             cal_image.is_master = True
             cal_image = overscan_subtract.do_stage(cal_image)
             cal_image = trim.do_stage(cal_image)
             cal_image = gain_norm.do_stage(cal_image)
-            print('uncertainty')
             cal_image = uncertainty.do_stage(cal_image)
-            print('solve orders')
             cal_image = solve_orders.do_stage(cal_image)
             dbs.save_calibration_info(cal_image.to_db_record(DataProduct(None, filename=os.path.basename(image_path),
                                                                                 filepath=os.path.dirname(image_path))),
@@ -134,8 +132,8 @@ class FLOYDSPipeline():
         files = glob(f'{self.lampflats_path}/*.fz', recursive=True)
         files = sorted(files)
         for path in files:
-            image = self.frame_factory.open({'path': '/home/pkottapalli/FLOYDS/data/test_data/ogg/en06/20190329/processed/ogg2m001-en06-20190329-0018-x92.fits.fz'}, self.context)
-            skyflat_image = self.frame_factory.open({'path': skyflat[0]}, self.context)
+            image = self.frame_factory.open({'path': path}, self.context)
+            skyflat_image = self.frame_factory.open({'path': '/home/pkottapalli/FLOYDS/data/test_data/ogg/en06/20190329/processed/ogg2m001-en06-20190329-0018-x92.fits.fz'}, self.context)
             print(image.instrument)
             image = overscan_subtract.do_stage(image)
             image = trim.do_stage(image)
@@ -143,7 +141,7 @@ class FLOYDSPipeline():
             print('uncertainty')
             image = uncertainty.do_stage(image)
             print('load orders')
-            image = load_orders.do_stage(skyflat_image)
+            image = load_orders.do_stage(skyflat_image) #Load order estimates from calibration image
             print('solve orders')
             image = solve_orders.do_stage(image)
             print('tweak orders')
