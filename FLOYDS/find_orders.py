@@ -149,5 +149,5 @@ class FLOYDSPipeline():
             image.write(self.context)
 #%%
 pipeline = FLOYDSPipeline()
-pipeline.setup_pipeline(processed_path = '/home/pkottapalli/FLOYDS/data/test_data/')
+pipeline.setup_pipeline(processed_path = '/home/pkottapalli/FLOYDS/data/skyflat_solved_lampflat_data/')
 pipeline.run_pipeline(lampflats_path = '/home/pkottapalli/FLOYDS/data/New_AltAz_data/', skyflats_path='/home/pkottapalli/FLOYDS/data/skyflats/')
