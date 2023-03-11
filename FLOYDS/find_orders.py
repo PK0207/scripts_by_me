@@ -100,7 +100,7 @@ class FLOYDSPipeline():
             print('Please run the .setup_pipeline method before running the pipeline')
             sys.exit(-1)
             
-        skyflat = glob('skyflats/ogg2m001-en06-20190329-0018-x00.fits.fz', recursive=True)
+        skyflat = glob(os.path.join(self.skyflats_path, '*.fz'), recursive=True)
         
         overscan_subtract = OverscanSubtractor(self.context)
         trim = Trimmer(self.context)
@@ -129,11 +129,11 @@ class FLOYDSPipeline():
             cal_image.write(self.context)
     
         
-        files = glob(f'{self.lampflats_path}/*.fz', recursive=True)
+        files = glob(os.path.join(self.lampflats_path, '*.fz'), recursive=True)
         files = sorted(files)
         for path in files:
             image = self.frame_factory.open({'path': path}, self.context)
-            skyflat_image = self.frame_factory.open({'path': '/home/pkottapalli/FLOYDS/data/test_data/ogg/en06/20190329/processed/ogg2m001-en06-20190329-0018-x92.fits.fz'}, self.context)
+            skyflat_image = self.frame_factory.open({'path': os.path.join('test_data','ogg','en06','20190329','processed', 'ogg2m001-en06-20190329-0018-x92.fits.fz')}, self.context)
             print(image.instrument)
             image = overscan_subtract.do_stage(image)
             image = trim.do_stage(image)
@@ -147,7 +147,8 @@ class FLOYDSPipeline():
             print('tweak orders')
             image = tweak_orders.do_stage(image)
             image.write(self.context)
+            
 #%%
 pipeline = FLOYDSPipeline()
-pipeline.setup_pipeline(processed_path = '/home/pkottapalli/FLOYDS/data/skyflat_solved_lampflat_data/')
-pipeline.run_pipeline(lampflats_path = '/home/pkottapalli/FLOYDS/data/New_AltAz_data/', skyflats_path='/home/pkottapalli/FLOYDS/data/skyflats/')
+pipeline.setup_pipeline(processed_path = 'test_data')
+pipeline.run_pipeline(lampflats_path = 'New_AltAz_data', skyflats_path='skyflats')
