@@ -10,18 +10,13 @@ from glob import glob
 from astropy.io import fits
 import numpy as np
 import matplotlib.pyplot as plt
-import scipy.stats as stats
 import os
-import time
 from datetime import datetime
 import sys
-import matplotlib.pyplot as plt
 
-from banzai_floyds.orders import Orders, OrderLoader, OrderTweaker, OrderSolver
-from banzai.calibrations import make_master_calibrations
+from banzai_floyds.orders import OrderLoader, OrderTweaker, OrderSolver
 from banzai_floyds import settings
 from banzai import dbs
-from banzai.utils.stage_utils import run_pipeline_stages
 from banzai.logs import set_log_level
 from banzai.context import Context
 import logging
@@ -30,7 +25,6 @@ from banzai.bias import OverscanSubtractor
 from banzai.trim import Trimmer
 from banzai.gain import GainNormalizer
 from banzai.uncertainty import PoissonInitializer
-from banzai_floyds.wavelengths import WavelengthSolutionLoader
 from banzai.data import DataProduct
 #%%
 class FLOYDSPipeline():
@@ -112,10 +106,6 @@ class FLOYDSPipeline():
         
         for image_path in skyflat:
             print(image_path)
-            skyflat_hdu = fits.open(image_path)
-            skyflat_hdu['SCI'].header['OBSTYPE'] = 'SKYFLAT'
-            skyflat_hdu.writeto(image_path, overwrite=True)
-            skyflat_hdu.close()
             cal_image = self.frame_factory.open({'path': image_path}, self.context)
             cal_image.is_master = True
             cal_image = overscan_subtract.do_stage(cal_image)
@@ -130,7 +120,7 @@ class FLOYDSPipeline():
         files = sorted(files)
         for path in files:
             image = self.frame_factory.open({'path': path}, self.context)
-            skyflat_image = self.frame_factory.open({'path': os.path.join('test_data','ogg','en06','20190329','processed', 'ogg2m001-en06-20190329-0018-x92.fits.fz')}, self.context)
+            skyflat_image = self.frame_factory.open({'path': os.path.join('tweaked_data','ogg','en06','20190329','processed', 'ogg2m001-en06-20190329-0018-x92.fits.fz')}, self.context)
             skyflat_image.is_master = True
             dbs.save_calibration_info(skyflat_image.to_db_record(DataProduct(None, filename=os.path.basename(image_path),
                                                                                 filepath=os.path.dirname(image_path))),
