@@ -123,9 +123,6 @@ class FLOYDSPipeline():
             cal_image = gain_norm.do_stage(cal_image)
             cal_image = uncertainty.do_stage(cal_image)
             cal_image = solve_orders.do_stage(cal_image)
-            dbs.save_calibration_info(cal_image.to_db_record(DataProduct(None, filename=os.path.basename(image_path),
-                                                                                filepath=os.path.dirname(image_path))),
-                                                                                os.environ['DB_ADDRESS'])
             cal_image.write(self.context)
     
         
@@ -134,6 +131,10 @@ class FLOYDSPipeline():
         for path in files:
             image = self.frame_factory.open({'path': path}, self.context)
             skyflat_image = self.frame_factory.open({'path': os.path.join('test_data','ogg','en06','20190329','processed', 'ogg2m001-en06-20190329-0018-x92.fits.fz')}, self.context)
+            skyflat_image.is_master = True
+            dbs.save_calibration_info(skyflat_image.to_db_record(DataProduct(None, filename=os.path.basename(image_path),
+                                                                                filepath=os.path.dirname(image_path))),
+                                                                                os.environ['DB_ADDRESS'])
             print(image.instrument)
             image = overscan_subtract.do_stage(image)
             image = trim.do_stage(image)
@@ -141,14 +142,68 @@ class FLOYDSPipeline():
             print('uncertainty')
             image = uncertainty.do_stage(image)
             print('load orders')
-            image = load_orders.do_stage(skyflat_image) #Load order estimates from calibration image
+            image = load_orders.do_stage(image) #Load order estimates from calibration image
             #print('solve orders')
             #image = solve_orders.do_stage(image)
             print('tweak orders')
             image = tweak_orders.do_stage(image)
             image.write(self.context)
+            print('DONE')
             
 #%%
 pipeline = FLOYDSPipeline()
-pipeline.setup_pipeline(processed_path = 'test_data')
+pipeline.setup_pipeline(processed_path = 'tweaked_data')
 pipeline.run_pipeline(lampflats_path = 'New_AltAz_data', skyflats_path='skyflats')
+#%% Show Xshift yshift and rotation with alt az
+files = glob('tweaked_data/ogg/en06/2022*/processed/*.fz', recursive=True)
+
+headers = [fits.open(f)['SCI'].header for f in files]
+
+aperwid = np.array([header['APERWID'] for header in headers])
+exptime = np.array([header['EXPTIME'] for header in headers])
+aperwid_2 = np.where(aperwid == 2)
+exp_80 = np.where([np.isclose(t, 80, atol = 1) for t in exptime])
+exp80_and_aperwid2 = np.intersect1d(aperwid_2, exp_80)
+use_headers = [headers[i] for i in exp80_and_aperwid2]
+times = np.array([datetime.strptime(header['DATE-OBS'], '%Y-%m-%dT%H:%M:%S.%f') for header in use_headers])
+rotangle = np.array([header['ROTANGLE'] for header in use_headers])
+altitude = np.array([header['ALTITUDE'] for header in use_headers])
+azimuth = np.array([header['AZIMUTH'] for header in use_headers])
+xshift = np.array([header['ORDXSHFT'] for header in use_headers])
+yshift = np.array([header['ORDYSHFT'] for header in use_headers])
+rotation = np.array([header['ORDROT'] for header in use_headers])
+ccdtemp = np.array([header['CCDATEMP'] for header in use_headers])
+#%%
+fig, ax = plt.subplots(dpi=200, subplot_kw={'projection':'polar'}, figsize=(10,10))
+plot = ax.scatter(np.array(azimuth)*np.pi/180, altitude, c = yshift, s = rotangle, alpha=0.8, vmin=-200)
+ax.set_title(r'Best shift with altitude-azimuth', fontsize=20)
+ax.set_xlabel(r'Altitude ($\degree$)', labelpad=5, fontsize=20)
+ax.set_rgrids((20,40,60,80))
+cbar = fig.colorbar(plot)
+cbar.ax.set_ylabel(r'Y shift', rotation=270, labelpad=25, fontsize=16)
+plt.show()
+#%%
+import matplotlib.dates as mdates
+fig, (ax1, ax2, ax3) = plt.subplots(1, 3, dpi=200, sharex=True, figsize=(21,5))
+ax1.scatter(times, xshift, s=9, c=ccdtemp)
+ax1.set_ylim(ymin=200, ymax=750)
+locator = mdates.AutoDateLocator()
+formatter = mdates.ConciseDateFormatter(locator)
+ax1.xaxis.set_major_locator(locator)
+ax1.set_xlabel('Time')
+ax1.set_ylabel('XSHIFT')
+
+ax2.scatter(times, yshift, s=9, c=ccdtemp)
+ax2.set_ylim(ymin=-200)
+ax2.xaxis.set_major_locator(locator)
+ax2.set_xlabel('Time')
+ax2.set_ylabel('YSHIFT')
+
+rot_plot = ax3.scatter(times, rotation, s=9, c=ccdtemp)
+ax3.set_ylim(ymin=-10)
+ax3.xaxis.set_major_locator(locator)
+ax3.set_xlabel('Time')
+ax3.set_ylabel('ROTATION')
+cbar = plt.colorbar(rot_plot, ax=ax3)
+cbar.ax.set_ylabel(r'Exposure time', rotation=270, labelpad=25)
+fig.show()
