@@ -19,7 +19,7 @@ files = all_alt_az
 images = [fits.open(f)[0].data for f in files]
 data_type = 'red flat'
 #%%
-for i, im in enumerate(images):
+for i, im in enumerate(images[:10]):
     plt.imshow(im)
     plt.colorbar()
     plt.title(f'{data_type}, {i}')

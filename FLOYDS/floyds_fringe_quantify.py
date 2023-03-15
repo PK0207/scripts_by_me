@@ -26,11 +26,11 @@ def normalize(data):
     new_data = [(i-min_data)/(max_data-min_data) for i in data]
     return new_data
 #%% Select a subregion of this non-rectified flat
-# for i, im in enumerate(images[:10]):
-#     plt.imshow(im[140:190, 1100:1300], origin='lower')
-#     plt.colorbar()
-#     plt.title(f'{data_type}, {i} fringe region')
-#     plt.show()
+for i, im in enumerate(images[:10]):
+    plt.imshow(im[140:190, 1100:1300], origin='lower')
+    plt.colorbar()
+    plt.title(f'{data_type}, {i} fringe region')
+    plt.show()
 #Now look at the linecut
 fringe_rms = []
 for i, im in enumerate(images):
