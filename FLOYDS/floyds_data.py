@@ -24,8 +24,8 @@ import os
 requests.post(
     'https://observe.lco.global/api/api-token-auth/',
     data = {
-        'username': 'pkottapalli@lco.global',
-        'password': '&2m9X<n2'
+        'username': 'eng@lco.global',
+        'password': 'sbatoo1'
     }
 ).json()
 #%%
@@ -37,7 +37,7 @@ with open(csv_path, newline='') as csvfile:
     for row in spamreader:
         filename = row[0]
         filenames.append(filename)
-filenames=sorted(filenames)
+#filenames=sorted(filenames)
 #%%
 # def _get_observations_offset(query_params: dict):
 #     observations_endpoint = urljoin('https://archive-api.lco.global', 'frames')
@@ -71,7 +71,7 @@ frameid = []
 for f in filenames[1:]:
     filename = os.path.splitext(os.path.splitext(f)[0])[0]
     print(filename)
-    archive_record = requests.get(f'https://archive-api.lco.global/frames/?site_id=ogg&basename={filename}&start=2022-01-01 00%3A00&end=2023-01-01 00%3A00&public=true&limit=1000', headers={'Authorization': 'Token 9b605ef2229d317ba1b031b54f2a0115aec69b9f'}).json()
+    archive_record = requests.get(f'https://archive-api.lco.global/frames/?site_id=ogg&basename={filename}&start=2022-01-01 00%3A00&end=2023-01-01 00%3A00&public=true&limit=1000', headers={'Authorization': 'Token efc8c22ed48db4962008085fc4af4bfa5354fd7d'}).json()
     #while archive_record['count'] > len(altitude):
     if len(archive_record['results']) > 0:
         rec = archive_record['results'][0]
@@ -79,10 +79,12 @@ for f in filenames[1:]:
         #response = _get_observations_offset(query_params)
         frame_id = rec["id"]
         frameid.append(frame_id)
-        header = requests.get(f'https://archive-api.lco.global/frames/{frame_id}/headers/', headers={'Authorization': 'Token 9b605ef2229d317ba1b031b54f2a0115aec69b9f'}).json()
+        header = requests.get(f'https://archive-api.lco.global/frames/{frame_id}/headers/', headers={'Authorization': 'Token efc8c22ed48db4962008085fc4af4bfa5354fd7d'}).json()
         altitude.append(header['data']['ALTITUDE'])
         azimuth.append(header['data']['AZIMUTH'])
         rotangle.append(header['data']['ROTANGLE'])
+    else:
+        print('could not find ' + filename)
 df = pd.DataFrame({'Altitude':altitude, 'Azimuth':azimuth, 'Rotangle': rotangle}, index=frameid)
 #%% Plot the locations of each coordinate
 plt.figure(dpi=200)
@@ -101,10 +103,11 @@ for i in range(len(altitude)):
 #%% download the frames that are unique
 import multiprocessing
 
-doubles_path = 'New_AltAz_data'
+doubles_path = 'All_AltAz_data'
 def download_file(records):
     for frame_id in records:
-        archive_record = requests.get(f'https://archive-api.lco.global/frames/?instrument_id=en06&site_id=ogg&start=2022-01-01&end=2023-01-01&configuration_type=LAMPFLAT&id{frame_id}&public=True&limit=1000', headers={'Authorization': 'Token 9b605ef2229d317ba1b031b54f2a0115aec69b9f'}).json()['results']
+        print(frame_id)
+        archive_record = requests.get(f'https://archive-api.lco.global/frames/?instrument_id=en06&site_id=ogg&start=2022-01-01&end=2023-01-01&configuration_type=LAMPFLAT&id{frame_id}&public=true&limit=1000', headers={'Authorization': 'Token efc8c22ed48db4962008085fc4af4bfa5354fd7d'}).json()['results']
         for rec in archive_record:
             #Give path to write files to
             with open(f'{doubles_path}/{rec["filename"]}', 'wb') as f:
@@ -115,3 +118,6 @@ with multiprocessing.Pool(N_PROCESSES) as pool:
     pool.map(download_file, unique_coords)
     pool.close()
     pool.join()
+    
+#%%
+download_file(unique_coords)
