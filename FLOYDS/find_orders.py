@@ -162,7 +162,7 @@ pipeline = FLOYDSPipeline()
 pipeline.setup_pipeline(processed_path = 'yrot_tweaked_data')
 pipeline.run_pipeline(lampflats_path = 'All_AltAz_data', skyflats_path='skyflats')
 #%% Show Xshift yshift and rotation with alt az
-files = glob('xyrot_tweaked_data/ogg/en06/2022*/processed/*.fz', recursive=True)
+files = glob('xy_tweaked_data/ogg/en06/2022*/processed/*.fz', recursive=True)
 files = sorted(files)
 
 headers = [fits.open(f)['SCI'].header for f in files]
@@ -182,81 +182,10 @@ altitude = np.array([header['ALTITUDE'] for header in use_headers])
 azimuth = np.array([header['AZIMUTH'] for header in use_headers])
 xshift = np.array([header['ORDXSHFT'] for header in use_headers])
 yshift = np.array([header['ORDYSHFT'] for header in use_headers])
-rotation = np.array([header['ORDROT'] for header in use_headers])
+#rotation = np.array([header['ORDROT'] for header in use_headers])
 ccdtemp = np.array([header['CCDATEMP'] for header in use_headers])
 wmstemp = np.array([header['WMSTEMP'] for header in use_headers])
-#%%
-fig, ax = plt.subplots(dpi=200, subplot_kw={'projection':'polar'}, figsize=(10,10))
-plot = ax.scatter(np.array(azimuth)*np.pi/180, altitude, c = xshift, s = rotangle, alpha=0.8)
-ax.set_title(r'Best shift with altitude-azimuth', fontsize=20)
-ax.set_xlabel(r'Altitude ($\degree$)', labelpad=5, fontsize=20)
-ax.set_rgrids((20,40,60,80))
-ax.set_rmin(90)
-ax.set_rmax(0)
-cbar = fig.colorbar(plot)
-cbar.ax.set_ylabel(r'X shift', rotation=270, labelpad=25, fontsize=16)
-plt.show()
-#%%
-import matplotlib.dates as mdates
-from astropy.stats import sigma_clipped_stats
-times = [sigma_clipped_stats(fits.open(f)['SCI'].data, sigma = 5)[1] for f in use_files]
-#times = azimuth
-fig, (ax1, ax2, ax3) = plt.subplots(1, 3, dpi=200, sharex=True, figsize=(21,5))
-ax1.scatter(times, rotation, s=9)
-#ax1.set_ylim(ymin=400, ymax=500)
-locator = mdates.AutoDateLocator()
-formatter = mdates.ConciseDateFormatter(locator)
-#ax1.xaxis.set_major_locator(locator)
-#ax1.xaxis.set_major_formatter(formatter)
-#ax1.set_xlabel('Time')
-ax1.set_xlabel('Median of Image')
-ax1.set_ylabel('ORDER ROTATION')
 
-ax2.scatter(times, yshift, s=9)
-#ax2.set_ylim(ymin=0, ymax=100)
-#ax2.xaxis.set_major_locator(locator)
-#ax2.xaxis.set_major_formatter(formatter)
-#ax2.set_xlabel('Time')
-ax2.set_xlabel('Median of Image')
-ax2.set_ylabel('YSHIFT')
-
-#rot_plot = ax3.scatter(times, xshift, s=9)
-#ax3.set_ylim(ymin=-10, ymax=0)
-#ax3.xaxis.set_major_locator(locator)
-#ax3.xaxis.set_major_formatter(formatter)
-#ax3.set_xlabel('Time')
-ax3.set_xlabel('Median of Image')
-ax3.set_ylabel('XSHIFT')
-
-fig.suptitle('Altitude, Y, and X shift')
-plt.figtext(0.7, 0.95, f'N images = {len(times)}, Aperwid = 2, Exptime = 40')
-#cbar = plt.colorbar(rot_plot, ax=ax3)
-#cbar.ax.set_ylabel(r'Exposure time', rotation=270, labelpad=25)
-fig.show()
-#%%
-fig, ax1 = plt.subplots(dpi=200)
-ax1.scatter(times, xshift, s=5, label='xshift')
-ax1.scatter(times, yshift, s=5, label='yshift')
-ax1.hlines(np.mean(yshift), times[0], times[-1], 'r', '--', label=f'Mean y-shift = {np.mean(yshift): 0.2f}')
-ax1.hlines(np.mean(xshift), times[0], times[-1], 'r', '--', label=f'Mean x-shift = {np.mean(xshift): 0.2f}')
-#ax1.set_ylim(ymin=200, ymax=750)
-locator = mdates.AutoDateLocator()
-formatter = mdates.ConciseDateFormatter(locator)
-ax1.xaxis.set_major_locator(locator)
-ax1.xaxis.set_major_formatter(formatter)
-ax1.set_xlabel('Time')
-ax1.set_ylabel('Shift relative to skyflat (pixels)')
-ax1.legend()
-fig.show()
-#%%
-fig, ax1 = plt.subplots(dpi=200)
-ax1.scatter(xshift, yshift, s=5)
-locator = mdates.AutoDateLocator()
-formatter = mdates.ConciseDateFormatter(locator)
-ax1.xaxis.set_major_locator(locator)
-ax1.set_xlabel('XSHIFT (pixel)')
-ax1.set_ylabel('YSHIFT (pixel)')
-fig.show()
 #%%
 skyflat = fits.open('/home/pkottapalli/FLOYDS/data/skyflats/ogg2m001-en06-20190329-0018-x00.fits.fz')
 
@@ -272,6 +201,27 @@ plt.ylabel('Y shift (pixel)')
 plt.xlabel('WMSTEMP')
 plt.title('Y shift vs. environment temperature')
 plt.show()
+#%% Solve just skyflat
+pipeline = FLOYDSPipeline()
+pipeline.setup_pipeline(processed_path = 'lampflat_tweaked_data')
+
+overscan_subtract = OverscanSubtractor(pipeline.context)
+trim = Trimmer(pipeline.context)
+gain_norm = GainNormalizer(pipeline.context)
+uncertainty = PoissonInitializer(pipeline.context)
+load_orders = OrderLoader(pipeline.context)
+solve_orders = OrderSolver(pipeline.context)
+tweak_orders = OrderTweaker(pipeline.context)
+skyflat = glob(os.path.join('skyflats', '*.fz'), recursive=True)
+for image_path in skyflat:
+    print(image_path)
+    cal_image = pipeline.frame_factory.open({'path': image_path}, pipeline.context)
+    cal_image = overscan_subtract.do_stage(cal_image)
+    cal_image = trim.do_stage(cal_image)
+    cal_image = gain_norm.do_stage(cal_image)
+    cal_image = uncertainty.do_stage(cal_image)
+    cal_image = solve_orders.do_stage(cal_image)
+    cal_image.write(pipeline.context)
 #%%Compare data to region of fit
 from numpy.polynomial.legendre import Legendre
 from banzai_floyds.orders import order_region
@@ -313,111 +263,3 @@ for i, (coeff, height, domain) in enumerate(order_estimates):
     #ax3.axis('off')
     plt.colorbar(im3)
     fig.show()
-
-#%% Solve just skyflat
-pipeline = FLOYDSPipeline()
-pipeline.setup_pipeline(processed_path = 'lampflat_tweaked_data')
-
-overscan_subtract = OverscanSubtractor(pipeline.context)
-trim = Trimmer(pipeline.context)
-gain_norm = GainNormalizer(pipeline.context)
-uncertainty = PoissonInitializer(pipeline.context)
-load_orders = OrderLoader(pipeline.context)
-solve_orders = OrderSolver(pipeline.context)
-tweak_orders = OrderTweaker(pipeline.context)
-skyflat = glob(os.path.join('skyflats', '*.fz'), recursive=True)
-for image_path in skyflat:
-    print(image_path)
-    cal_image = pipeline.frame_factory.open({'path': image_path}, pipeline.context)
-    cal_image = overscan_subtract.do_stage(cal_image)
-    cal_image = trim.do_stage(cal_image)
-    cal_image = gain_norm.do_stage(cal_image)
-    cal_image = uncertainty.do_stage(cal_image)
-    cal_image = solve_orders.do_stage(cal_image)
-    cal_image.write(pipeline.context)
-#%% GIF of shifted flats
-
-import matplotlib.animation as animation
-from scipy.ndimage import shift
-from PIL import Image
-def rotate(data, angle=0, clockwise=False):
-    pil_image = Image.fromarray(data)
-    if clockwise==False:
-        new_im = np.array(pil_image.rotate(360-angle))
-    else:
-        new_im = np.array(pil_image.rotate(angle))
-    return new_im
-
-def std_fringe(im):
-    return np.std(im[165, 1100:1300])
-
-fig, ax = plt.subplots(dpi = 200)
-template = fits.open(use_files[0])['SCI'].data
-first_im = fits.open(use_files[1])['SCI'].data
-image = shift(first_im, (yshift[1]-yshift[0], xshift[1]-xshift[0]), mode='wrap')
-image = rotate(image, rotation[1]-rotation[0], clockwise=False)
-first_im /= template
-im1 = ax.imshow(first_im, vmin = np.median(first_im)-5*np.std(first_im), vmax = np.median(first_im)+5*np.std(first_im), origin='lower')
-plt.colorbar(im1)
-ax.set_title(f'Image No. 1 flatfielded by a template after shifting by {yshift[1]:0.2f}', fontsize=8)
-def init():
-    return im1,
-    
-def update(i):
-    i+=1
-    image = fits.open(use_files[i])['SCI'].data
-    image = shift(image, (yshift[i]-yshift[0], xshift[i]-xshift[0]), mode='wrap')
-    image = rotate(image, rotation[i]-rotation[0], clockwise=False)
-    image /= template
-    #median = sigma_clipped_stats(image, sigma = 5)[1]
-    #std = np.std(image)
-    im1 = ax.imshow(image, vmin = np.median(first_im)-5*np.std(first_im), vmax = np.median(first_im)+5*np.std(first_im), origin='lower')
-    ax.set_title(f'Image No. {i} flatfielded by a template after shifting (rot: {rotation[i]:0.2f}, y: {yshift[i]:0.2f}, x: {xshift[i]:0.2f})', fontsize=8)
-    ax.set_xlabel(f'Quality of reduction: {std_fringe(image):0.2f}')
-    return im1, 
-
-anim = animation.FuncAnimation(fig, update, frames=np.arange(50), init_func=init, interval = 50, blit = True)
-anim.save('shift_animation.gif', fps=2)
-#%% GIF of non-shifted flats
-fig, ax = plt.subplots(dpi = 200)
-template = fits.open(files[0])['SCI'].data[0:200, 0:600]
-first_im = fits.open(files[1])['SCI'].data[0:200, 0:600]
-first_im /= template
-im1 = ax.imshow(first_im, vmin = np.median(first_im)-5*np.std(first_im), vmax = np.median(first_im)+5*np.std(first_im), origin='lower')
-plt.colorbar(im1)
-ax.set_title('Image No. 1 flatfielded by a template without shifting', fontsize=8)
-def init():
-    return im1,
-    
-def update(i):
-    i+=1
-    image = fits.open(files[i])['SCI'].data[0:200, 0:600]
-    image /= template
-    median = np.median(image)
-    std = np.std(image)
-    im1 = ax.imshow(image, vmin = median-5*std, vmax = median+5*std, origin='lower')
-    ax.set_title(f'Image No. {i} flatfielded by a template without shifting', fontsize=8)
-    ax.set_xlabel(f'Quality of reduction: {median:0.2f}')
-    return im1, 
-
-anim = animation.FuncAnimation(fig, update, frames=np.arange(50), init_func=init, interval = 50, blit = True)
-anim.save('non_shift_animation.gif', fps=2)
-#%% Shift vs. quality
-quality = []
-for i, f in enumerate(use_files):
-    image = fits.open(f)['SCI'].data
-    image = shift(image, (yshift[i]-yshift[0], xshift[i]-xshift[0]), mode='wrap')
-    image = rotate(image, rotation[i]-rotation[0], clockwise=False)
-    image /= template
-    #quality.append(sigma_clipped_stats(image, sigma = 5)[1])
-    quality.append(std_fringe(image))
-shift_dist = np.sqrt((yshift-yshift[0])**2 + (rotation-rotation[0])**2 + (xshift-xshift[0])**2)
-#Plot
-fig, ax = plt.subplots(dpi=200)
-plot = ax.scatter(shift_dist, quality, s=7, c=np.arange(0, len(use_files)), alpha=0.8)
-ax.set_title('Median of divided lampflat vs. shift in y')
-ax.set_xlabel(r'Shift Distance $\sqrt{(y-y_0)^2+(x-x_0)^2+(rot-rot_0)^2}$')
-#ax.set_xlabel('Rotation')
-ax.set_ylabel('Quality')
-plt.colorbar(plot)
-fig.show()
