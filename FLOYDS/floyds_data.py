@@ -30,14 +30,14 @@ requests.post(
 ).json()
 #%%
 import csv
-csv_path = '/home/pkottapalli/Downloads/On_demand_report_2023-03-16T17 02 56.539Z_65dbdeb0-c41c-11ed-8948-cb80406fa13a.csv'
+csv_path = 'On_demand_report_2023-03-17T22_37_35.945Z_5087d390-c514-11ed-a268-bd5dde369fb5.csv'
 filenames = []
 with open(csv_path, newline='') as csvfile:
     spamreader = csv.reader(csvfile, delimiter=',')
     for row in spamreader:
         filename = row[0]
         filenames.append(filename)
-filenames=sorted(filenames)
+
 #%%
 # def _get_observations_offset(query_params: dict):
 #     observations_endpoint = urljoin('https://archive-api.lco.global', 'frames')
@@ -83,6 +83,8 @@ for f in filenames[1:]:
         altitude.append(header['data']['ALTITUDE'])
         azimuth.append(header['data']['AZIMUTH'])
         rotangle.append(header['data']['ROTANGLE'])
+    else:
+        print(filename)
 df = pd.DataFrame({'Altitude':altitude, 'Azimuth':azimuth, 'Rotangle': rotangle}, index=frameid)
 #%% Plot the locations of each coordinate
 plt.figure(dpi=200)
