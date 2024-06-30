@@ -96,7 +96,7 @@ im2_num = 1
 alt1, az1, rot1 = env_parameters[im1_num,1], env_parameters[im1_num,0], env_parameters[im1_num,2]
 alt2, az2, rot2 = env_parameters[im2_num,1], env_parameters[im2_num,0], env_parameters[im2_num,2]
 
-im_new = xy_shift(images[im1_num], 1, 0, x_up=False, y_up=True)
+im_new = xy_shift(images[im1_num], 456, 35, x_up=True, y_up=True)
 div_im = np.divide(im_new,images[im2_num])
 
 median = np.median(div_im)
