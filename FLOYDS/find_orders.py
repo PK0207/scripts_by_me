@@ -114,7 +114,7 @@ class FLOYDSPipeline():
         #     cal_image = uncertainty.do_stage(cal_image)
         #     cal_image = solve_orders.do_stage(cal_image)
         #     cal_image.write(self.context)
-        skyflat_path = os.path.join('tweaked_data','ogg','en06','20190329','processed', 'ogg2m001-en06-20190329-0018-x92.fits.fz')
+        skyflat_path = os.path.join('ogg2m001-en06-20190329-0018-x92.fits.fz')
         skyflat_image = self.frame_factory.open({'path': skyflat_path}, self.context)
         skyflat_image.is_master = True
         dbs.save_calibration_info(skyflat_image.to_db_record(DataProduct(None, filename=os.path.basename(skyflat_path),
@@ -122,7 +122,7 @@ class FLOYDSPipeline():
                                                                             os.environ['DB_ADDRESS'])
         files = glob(os.path.join(self.lampflats_path, '*.fz'), recursive=True)
         files = sorted(files)
-        for path in files:
+        for path in files[721:]:
             image = self.frame_factory.open({'path': path}, self.context)
             print(image.instrument)
             image = overscan_subtract.do_stage(image)
@@ -141,10 +141,10 @@ class FLOYDSPipeline():
             
 #%%
 pipeline = FLOYDSPipeline()
-pipeline.setup_pipeline(processed_path = 'tweaked_data')
-pipeline.run_pipeline(lampflats_path = 'New_AltAz_data', skyflats_path='skyflats')
+pipeline.setup_pipeline(processed_path = 'all_tweaked_data')
+pipeline.run_pipeline(lampflats_path = 'All_AltAz_data', skyflats_path='skyflats')
 #%% Show Xshift yshift and rotation with alt az
-files = glob('tweaked_data/ogg/en06/2022*/processed/*.fz', recursive=True)
+files = glob('all_tweaked_data/ogg/en06/2022*/processed/*.fz', recursive=True)
 
 headers = [fits.open(f)['SCI'].header for f in files]
 
@@ -204,12 +204,13 @@ fig.show()
 fig, ax1 = plt.subplots(dpi=200)
 ax1.scatter(times, xshift, s=5, label='xshift')
 ax1.scatter(times, yshift, s=5, label='yshift')
-ax1.hlines(np.mean(yshift), times[0], times[-1], 'r', '--', label='Mean y-shift = -0.152')
-ax1.hlines(np.mean(xshift), times[0], times[-1], 'r', '--', label='Mean x-shift = 2.45')
+ax1.hlines(np.mean(yshift), times[0], times[-1], 'r', '--', label=f'Mean y-shift = {np.mean(yshift)}')
+ax1.hlines(np.mean(xshift), times[0], times[-1], 'r', '--', label=f'Mean x-shift = {np.mean(xshift)}')
 #ax1.set_ylim(ymin=200, ymax=750)
 locator = mdates.AutoDateLocator()
 formatter = mdates.ConciseDateFormatter(locator)
 ax1.xaxis.set_major_locator(locator)
+ax1.xaxis.set_major_formatter(formatter)
 ax1.set_xlabel('Time')
 ax1.set_ylabel('Shift relative to skyflat (pixels)')
 ax1.legend()
