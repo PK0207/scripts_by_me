@@ -1,0 +1,294 @@
+%----  Relevant files
+InitCondFile          /cosma8/data/dp004/dc-brig2/PK-ICs/vol03_lp1/ICs/vol03_lp1
+
+OutputDir            output/
+
+SnapshotFileBase     snapshot
+
+OutputListFilename   snapshots.txt
+
+
+%---- File formats
+ICFormat           3
+SnapFormat         3
+
+% MHD
+MHDSeedDir          4
+MHDSeedValue        1e-14
+
+%---- CPU-time limits
+TimeLimitCPU              257400  % in seconds (cosma 72 hours)
+CpuTimeBetRestartFile     7200    % in seconds
+ResubmitOn        1
+ResubmitCommand   ./bash_resubmit.sh
+
+
+%----- Memory alloction
+MaxMemSize    22000    %for cosma7
+BufferSize    300     %150      % in MByte
+
+
+%---- Caracteristics of run
+TimeBegin           0.0078125  % Begin of the simulation
+TimeMax             1.0        % End of the simulation
+
+
+%---- Basic code options that set the type of simulation
+ComovingIntegrationOn    1
+PeriodicBoundariesOn     1
+CoolingOn                1
+StarformationOn          1
+
+
+%---- Cosmological parameters (WMAP-7 for apostle)
+Omega0                0.304611 %PK changed to match omega_cdm in Jemima swift param
+OmegaLambda           0.695389 %PK changed to match Jemima
+OmegaBaryon           0.0 	%PK changed to match Azi in Jemima param
+HubbleParam           0.681	%PK changed to match Jemima
+BoxSize               272.4 %Mpc/h equals 400Mpc
+
+%---- Output frequency and output paramaters
+OutputListOn              1
+TimeBetSnapshot           0.0
+TimeOfFirstSnapshot       0.0
+TimeBetStatistics         0.01
+NumFilesPerSnapshot       8
+NumFilesWrittenInParallel 8
+
+
+%---- Accuracy of time integration
+TypeOfTimestepCriterion  0
+ErrTolIntAccuracy        0.012    %PK changed to mach lyra runs
+CourantFac               0.3      %Azi lyra run
+MaxSizeTimestep          0.005
+MinSizeTimestep          0.0
+
+
+%---- Parameters for star formation model
+CritPhysDensity      0       % critical physical density for star formation (in cm^(-3))
+MaxSfrTimescale      0.00227    % in internal time units (1.5)
+CritOverDensity      57.7    % overdensity threshold value
+TempSupernova        5.73e7  % in Kelvin (1.0e8)
+TempClouds           1000.0  % in Kelvin
+FactorEVP            573.0   % (1000.0)
+TemperatureThresh    0
+
+%---- Treatment of empty space and temperature limits
+InitGasTemp                           244.8095
+MinGasTemp                            5.0
+MinimumDensityOnStartUp               1.0e-20
+LimitUBelowThisDensity                0.0
+LimitUBelowCertainDensityToThisValue  0.0
+MinEgySpec                            0.0
+
+
+%---- Tree algorithm, force accuracy, domain update frequency
+TypeOfOpeningCriterion                1
+ErrTolTheta                           0.4      %Azi lyra run
+ErrTolForceAcc                        0.0025   %Azi lyra run
+MultipleDomains                       8
+TopNodeFactor                         5
+ActivePartFracForNewDomainDecomp      0.01
+
+
+%---- Initial density estimate
+DesNumNgb              64
+MaxNumNgbDeviation     8
+
+%---- System of units
+UnitLength_in_cm         3.08567758e24        ;  1.0 Mpc
+UnitMass_in_g            1.98848e43           ;  1.0e10 solar masses
+UnitVelocity_in_cm_per_s 1e5                ;  1 km/sec
+GravityConstantInternal  0
+
+
+%---- Gravitational softening lengths in Mpc/h
+
+MinimumComovingHydroSoftening   0.000665 %PK changed this. must be equal to DM
+AdaptiveHydroSofteningSpacing   1.2
+GasSoftFactor                   2.8
+
+SofteningComovingType0 0.0025 %for gas
+SofteningComovingType1 0.000453      %PK changed this to match Jemima stars use type1
+SofteningComovingType2 0.005
+SofteningComovingType3 0.010
+SofteningComovingType4 0.040       %Azi (stars if generated)
+SofteningComovingType5 0.080 
+
+SofteningMaxPhysType0  0.00125
+SofteningMaxPhysType1  0.000119      %PK changed this to match Jemima  
+SofteningMaxPhysType2  0.0025
+SofteningMaxPhysType3  0.005
+SofteningMaxPhysType4  0.020
+SofteningMaxPhysType5  0.040
+
+SofteningTypeOfPartType0 0
+SofteningTypeOfPartType1 1
+SofteningTypeOfPartType2 2
+SofteningTypeOfPartType3 3
+SofteningTypeOfPartType4 4
+SofteningTypeOfPartType5 5
+%SofteningTypeOfPartType6 5
+
+%----- Mesh regularization options
+CellShapingSpeed       0.5
+CellMaxAngleFactor     2.25
+ReferenceGasPartMass   0
+TargetGasMassFactor    1
+RefinementCriterion    1
+DerefinementCriterion  1
+TreecoolFile           /cosma7/data/dp004/azadehf/APOSTLE_AURIGA/arepo/data/TREECOOL_fg_dec11
+
+
+%----- Subfind
+ErrTolThetaSubfind     0.5
+DesLinkNgb             20
+
+
+%----- Wind
+WindEnergyIn1e51erg          1.6944001
+ThermalWindFactor            3.0
+VariableWindVelFactor        3.4641
+VariableWindSpecMomentum     0.0
+WindFreeTravelMaxTimeFactor  0.025
+WindFreeTravelDensFac        0.05
+TimeBetOnTheFlyFoF           1.03
+MinWindVel                   0.0
+WindDumpFactor               0.6
+
+%----- Enrichment
+IMF_MinMass_Msun           0.1
+IMF_MaxMass_Msun           100.0
+AGB_MassTransferOn         1
+SNIa_MassTransferOn        1
+SNII_MassTransferOn        1
+SNII_MinMass_Msun          8.0
+SNII_MaxMass_Msun          100.0
+SNIa_Rate_TAU              0.04
+SNIa_Rate_Norm             1.3e-3
+YieldTablePath             /cosma7/data/dp004/azadehf/APOSTLE_AURIGA/Arepo_GFM_Tables_NewAuriga/Yields/
+DesNumNgbEnrichment          64
+MaxNumNgbDeviationEnrichment 1
+
+
+%-----  Black holes
+BlackHoleAccretionFactor         100.0
+BlackHoleFeedbackFactor          0.07
+BlackHoleEddingtonFactor         1.0
+SeedBlackHoleMass                1.e-5
+MinFoFMassForNewSeed             5.0
+DesNumNgbBlackHole               348
+BlackHoleMaxAccretionRadius      1.0e5
+BlackHoleRadiativeEfficiency     0.2
+BHFrictionCoefficient            1.4
+BHFrictionAvgTime                0.003
+
+
+%-----  Radio Mode
+RadioModeMachnumber                0.0075
+RadioRelativeBubbleSize            0.1
+RadioRelativeBubbleEnergy          0.05
+RadioRelativeMaxDist               0.8
+RadioModeMetallicityInSolar        1.0
+
+
+%-----  Metal cooling
+CoolingTablePath            /cosma7/data/dp004/azadehf/APOSTLE_AURIGA/Arepo_GFM_Tables_NewAuriga/Cooling/cooling_metal_AGN_Compton_self_shielding_Rahmati12.hdf5
+MinMetalTemp                1e4
+
+
+%----- Self-Shielding
+SelfShieldingFile           /cosma7/data/dp004/azadehf/APOSTLE_AURIGA/arepo/data/SelfShielding_Rahmati12
+
+
+%-----  Photometrics
+PhotometricsTablePath       /cosma7/data/dp004/azadehf/APOSTLE_AURIGA/Arepo_GFM_Tables_NewAuriga/Photometrics/
+
+
+%----- AGN radiation
+TreecoolFileAGN             /cosma7/data/dp004/azadehf/APOSTLE_AURIGA/arepo/data/TREECOOL_AGN
+SelfShieldingDensity        0.1295
+ObscurationFactor           0.3
+ObscurationSlope            0.07
+
+%----- MC Tracers
+%TracerMCPerCell 1
+
+%----- Movie
+%Auriga_Movie_CenterRadius 0.010 % Mpc
+%Auriga_Movie_Directory    ../movie/
+%Auriga_Movie_OutputListFilename movie_frames_1024.txt
+%Auriga_Movie_Galaxy_Rotation00 1.0
+%Auriga_Movie_Galaxy_Rotation01 0.0
+%Auriga_Movie_Galaxy_Rotation02 0.0
+%Auriga_Movie_Galaxy_Rotation10 0.0
+%Auriga_Movie_Galaxy_Rotation11 1.0
+%Auriga_Movie_Galaxy_Rotation12 0.0
+%Auriga_Movie_Galaxy_Rotation20 0.0
+%Auriga_Movie_Galaxy_Rotation21 0.0
+%Auriga_Movie_Galaxy_Rotation22 1.0
+
+%----- R-process
+
+% Illustris
+NSNS_MassPerEvent0      1.0
+NSNS_RateNorm0          1.3e-6
+NSNS_RateTAU0           0.1
+NSNS_PowerlawIndex0     1.12
+
+% FIRE
+NSNS_MassPerEvent1      1.0
+NSNS_RateNorm1          1e-5
+NSNS_RateTAU1           0.03
+NSNS_PowerlawIndex1     1.0
+
+% Fiducial
+NSNS_MassPerEvent2      1.0
+NSNS_RateNorm2          3e-6
+NSNS_RateTAU2           0.03
+NSNS_PowerlawIndex2     1.0
+
+% Higher rate
+NSNS_MassPerEvent3      1.0
+NSNS_RateNorm3          1e-5
+NSNS_RateTAU3           0.03
+NSNS_PowerlawIndex3     1.0
+
+% Lower rate
+NSNS_MassPerEvent4      1.0
+NSNS_RateNorm4          1e-6
+NSNS_RateTAU4           0.03
+NSNS_PowerlawIndex4     1.0
+
+% Longer delay
+NSNS_MassPerEvent5      1.0
+NSNS_RateNorm5          3e-6
+NSNS_RateTAU5           0.1
+NSNS_PowerlawIndex5     1.0
+
+
+% Shorter delay
+NSNS_MassPerEvent6      1.0
+NSNS_RateNorm6          3e-6
+NSNS_RateTAU6           0.01
+NSNS_PowerlawIndex6     1.0
+
+% Smaller index
+NSNS_MassPerEvent7      1.0
+NSNS_RateNorm7          3e-6
+NSNS_RateTAU7           0.03
+NSNS_PowerlawIndex7     0.5
+
+% Larger index
+NSNS_MassPerEvent8      1.0
+NSNS_RateNorm8          3e-6
+NSNS_RateTAU8           0.03
+NSNS_PowerlawIndex8     1.5
+
+RPSN_MassPerEvent0      1.0
+RPSN_FractionPerSN0     1e-1
+RPSN_MassPerEvent1      1.0
+RPSN_FractionPerSN1     1e-2
+RPSN_MassPerEvent2      1.0
+RPSN_FractionPerSN2     1e-3
+

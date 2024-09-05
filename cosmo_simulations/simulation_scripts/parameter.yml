@@ -1,0 +1,92 @@
+# Define some meta-data about the simulation
+MetaData:
+  run_name:   dmo_vol_lp1
+
+# Define the system of units to use internally. 
+InternalUnitSystem:
+  UnitMass_in_cgs:     1.98848e43    # 10^10 M_sun
+  UnitLength_in_cgs:   3.08567758e24 # 1 Mpc
+  UnitVelocity_in_cgs: 1e5           # 1 km/s
+  UnitCurrent_in_cgs:  1             # Amperes
+  UnitTemp_in_cgs:     1             # Kelvin
+
+# Cosmological parameters
+Cosmology:
+  h:              0.681        # Reduced Hubble constant                                                               
+  a_begin:        0.0078125     # Initial scale-factor of the simulation                                                
+  a_end:          1.0           # Final scale factor of the simulation
+  Omega_cdm:      0.304611      # Cold dark matter density parameter
+  Omega_lambda:   0.695389      # Dark-energy density parameter
+  Omega_b:        0.0           # Baryon density parameter
+                          
+# Cosmological parameters (Azi):
+#Cosmology:
+#  Omega_cdm = 0.256011      #omega_cdm + omega_b = 0.256011+0.0486
+#  Omega_lambda = 0.695389   #1-omega_m
+#  h = 0.681
+#  lbox = 272.4             #Mpc/h 
+#  redshift = 127.          #redshift of ICs
+#  sigma8 =  0.804
+
+# Parameters governing the time integration
+TimeIntegration:
+  dt_min:     1e-10
+  dt_max:     1e-2 
+
+Scheduler:
+  max_top_level_cells: 16
+  cell_split_size:     200
+
+#Parameters governing the snapshots
+Snapshots:
+  basename:            ./snapshots/snapshot
+  output_list_on:      1
+  output_list:         /cosma7/data/dp004/dc-kott1/PK-ICs/snaps_128_z20p00_z00p00_dt_z.txt
+                                          
+# Parameters governing the conserved quantities statistics
+Statistics:
+  delta_time:          1.02
+  scale_factor_first:  0.02
+                                                
+# Parameters for the self-gravity scheme
+Gravity:
+  eta:                    0.025         
+  MAC:                    adaptive
+  theta_cr:               0.7
+  epsilon_fmm:            0.001
+  comoving_DM_softening:     0.000665  # Comoving softening length (in internal units) Mpc
+  max_physical_DM_softening: 0.000175  # Physical softening length (in internal units) Mpc
+  softening_ratio_background:   0.04
+  mesh_side_length:       512
+                                                     
+# Zoom params from Will Roper's email
+# ZoomRegion:
+#  enable: 1  # turns on zoom region 
+#  zoom_boost_factor: 1.1  # controls zoom region padding
+#  enable_bkg_refinement: 1  # tells the code whether to accept your zoom_boost_factor on faith or recompute a better one if "non-optimal"
+ZoomRegion:
+  enable: 1
+  buffer_region_ratio: 1.1
+  bkg_top_level_cells: 22
+  region_dim_buffer_cell_ratio: 1
+
+# If using MPI the bottom two are important. This is the best setup I’ve managed to find
+DomainDecomposition:
+  initial_type: edgememory
+  repartition_type: fullcosts
+  trigger:          0.1
+  background_wedge_decomp: 1
+  separate_decomps: 0
+# Parameters related to the initial conditions
+InitialConditions:
+  file_name:                   /cosma7/data/dp004/dc-kott1/PK-ICs/vol03_lp1_swift
+  periodic:                    1
+  cleanup_h_factors:           1    
+  cleanup_velocity_factors:    1  
+
+Restarts:
+  onexit:       1
+  delta_hours:  5.0
+  max_run_time: 72                 # Three days minus fergie time
+  resubmit_on_exit:   1
+  resubmit_command:   ./resubmit.sh
