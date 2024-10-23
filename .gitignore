@@ -129,3 +129,4 @@ dmypy.json
 .pyre/
 /cosmo_simulations/data
 /research24/astrotest
+/research24/HST
