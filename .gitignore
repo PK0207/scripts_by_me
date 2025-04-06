@@ -130,3 +130,4 @@ dmypy.json
 /cosmo_simulations/data
 /research24/astrotest
 /research24/HST
+research24/astrotest/python2/Dockerfile
