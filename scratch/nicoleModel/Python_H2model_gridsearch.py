@@ -287,7 +287,7 @@ def lnprob(theta, velocity, flux, flux_err, theta_keys, param_dict, prior_dict, 
         return posterior
 #########################################################################################################################
 #CONSTANTS
-lines_to_fit_dict = {'[0,1]': [1460.17], '[1,7]': [1467.08]}
+lines_to_fit_dict = {'[0,1]': [1467.08, 1500.45]}
 
 #READ IN DATA - ALL FILES WILL BE LOADED INTO DICTIONARIES
 targ = "V4046Sgr"
@@ -354,7 +354,7 @@ for wave_idx, wave in enumerate(model_refwaves):
         target_fluxerr[key] = flux_err[line_indices]
 
 #Concatenate individual lines into single arrays for model fitting
-prog_14_datavel, prog_14_dataflux, prog_14_dataerr = get_prog_data(lines_to_fit_dict['[1,7]'], model_refwaves, target_velocity, target_fluxes, target_fluxerr)
+prog_14_datavel, prog_14_dataflux, prog_14_dataerr = get_prog_data(lines_to_fit_dict['[0,1]'], model_refwaves, target_velocity, target_fluxes, target_fluxerr)
 
 #Define set of model parameters for Python version of code
 param_dict = {"Inclination": targ_inclination * math.pi / 180.,
