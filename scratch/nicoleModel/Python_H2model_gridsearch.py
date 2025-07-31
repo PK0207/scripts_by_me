@@ -290,17 +290,17 @@ def lnprob(theta, velocity, flux, flux_err, theta_keys, param_dict, prior_dict, 
 lines_to_fit_dict = {'[0,1]': [1467.08, 1500.45]}
 
 #READ IN DATA - ALL FILES WILL BE LOADED INTO DICTIONARIES
-targ = "V4046Sgr"
+targ = "RULupi"
 #Disk Constants
-targ_d = 72.3 #Gaia DR 2 (Bailer-Jones et al. 2018)
-targ_AV = 0. #France et al. 2017 (HI corrected)
-targ_M = 0.86+0.69 #France et al. 2017
-targ_inclination = 33.
+targ_d = 154 #Gaia DR 2 (Bailer-Jones et al. 2018)
+targ_AV = 0.7 #France et al. 2017 (HI corrected)
+targ_M = 0.55 #France et al. 2017
+targ_inclination = 19.
 
-target_wavelengths = pd.read_pickle("../target_wavelengths_RULupi.pkl")
-target_velocity = pd.read_pickle('../RULupi_H2velocity.pkl')
-target_fluxes = pd.read_pickle('../RULupi_H2flux.pkl')
-target_fluxerr = pd.read_pickle('../RULupi_H2fluxerr.pkl')
+target_wavelengths = pd.read_pickle("target_wavelengths_RULupi.pkl")
+target_velocity = pd.read_pickle('RULupi_H2velocity.pkl')
+target_fluxes = pd.read_pickle('RULupi_H2flux.pkl')
+target_fluxerr = pd.read_pickle('RULupi_H2fluxerr.pkl')
 
 #Convert dictionaries to arrays
 model_refwaves = np.array(target_wavelengths["labwave"]).astype(np.float64) #Wavelengths that models were created for
