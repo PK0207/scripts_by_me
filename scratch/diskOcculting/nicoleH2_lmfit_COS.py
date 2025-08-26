@@ -425,18 +425,26 @@ np.seterr(divide='ignore') #divide by 0 silencing
 np.seterr(invalid='ignore') #correct_factor silencing
 
 #Disk Constants
-targ = "EP Cha"
-targ_d = 98.816 
-targ_AV = 0.0 
-targ_M = 0.8 
-targ_inclination = 70.0
+targ = "RU Lup"
+targ_d = 154 #Gaia DR2 (Bailer Jones et al. 2018)
+targ_AV = 0.0 #Fang et al. 2018
+targ_M = 0.55 #Alcala et al. 2018 
+targ_inclination = 19
+obs_vel = [3.3, 3.3] #km/s SIMBAD
 EBV = -1.0 * targ_AV / Rv #reddening/attenuation
 
 #read in the disk data
 preppedData='EP_Cha_COS_ULLYSES_H2_Data.npz'
-ref_waves,obs_vel,progVals,lyawVals,target_velocity,target_fluxes,target_fluxerr,lines_to_fit_dict=loadData(preppedData)
-model_refwaves=ref_waves #check if deepcopy is needed
-
+#ref_waves,obs_vel,progVals,lyawVals,target_velocity,target_fluxes,target_fluxerr,lines_to_fit_dict=loadData(preppedData)
+progVals = ['[1,7]']
+lyawVals = 1215.73
+target_wavelengths = pd.read_pickle("../nicoleModel/target_wavelengths_RULupi.pkl")
+target_velocity = pd.read_pickle('../nicoleModel/RULupi_H2velocity.pkl')
+target_fluxes = pd.read_pickle('../nicoleModel/RULupi_H2flux.pkl')
+target_fluxerr = pd.read_pickle('../nicoleModel/RULupi_H2fluxerr.pkl')
+lines_to_fit_dict = {'[1,7]': [1467.08, 1500.45]}
+model_refwaves = np.array(target_wavelengths["labwave"]).astype(np.float64) #Wavelengths that models were created for #check if deepcopy is needed
+ref_waves = model_refwaves.copy()
 #observation details (from ULLYSES)
 grtng=[] #The ULLYSES data switches to G160M data at 1470A
 cwave=[] #G130M combined 1327 and 1291 data, G160M combined 1577, 1600, and 1623 data
@@ -449,18 +457,17 @@ lifep=[] #G130M was all LP1, G160M was also all LP1
 #Need to shift lines according to measured velocity, done for all data regardless of whether or not we'll actually fit the line
 abs_vel=100 #cutoff between line and continuum
 target_velocityL,target_fluxesL,target_fluxerrL=[],[],[] #prepared line data
-for v_idx,v_shift in enumerate(obs_vel):
+for v_idx,v_shift in zip(lines_to_fit_dict['[1,7]'], obs_vel) :
     if np.isnan(v_shift) == False:
         #Shift the lines
-        linevelocity = target_velocity[v_idx] - v_shift #shifted line velocities
+        linevelocity = np.array(target_velocity[str(v_idx)]) - v_shift #shifted line velocities
 
         #isolate the emission line
         line_indices = np.argwhere(np.absolute(linevelocity) <= abs_vel).flatten() #indices covering the emisison line
         cont_indices = np.argwhere(np.absolute(linevelocity) >= abs_vel).flatten() #indices in the b/g continuum
-
         #grab the flux data
-        flux_line = target_fluxes[v_idx]
-        flux_err = target_fluxerr[v_idx]
+        flux_line = target_fluxes[str(v_idx)]
+        flux_err = target_fluxerr[str(v_idx)]
 
         #fit the continuum
         v_tofit = [linevelocity[idx] for idx in cont_indices]
@@ -484,7 +491,7 @@ for v_idx,v_shift in enumerate(obs_vel):
 
         target_velocityL.append(linevelocity[line_indices])
         target_fluxesL.append(norm_fluxes[line_indices])
-        target_fluxerrL.append(flux_err[line_indices]) #only save the line data
+        target_fluxerrL.append(np.array(flux_err)[line_indices]) #only save the line data
         
 #Concatenate individual lines into single arrays for model fitting
 all_datavel=np.concatenate(target_velocityL)
@@ -567,11 +574,12 @@ plt.show()
 rpColors=['cornflowerblue', 'orange', 'green', 'firebrick', 'mediumorchid', 'orangered', 'pink', 'gray', 'olive', 'cyan', 'deeppink', 'navy', 'khaki', 'lightsalmon', 'lime'] #colors from Rachel
 
 ppow,pscl=plotPower(all_dataflux)
+print(ppow)
 fig,ax=plt.subplots(figsize=(11.5,8),layout='constrained')
 for i in range(len(target_velocity)):
     ax.plot(target_velocityL[i],target_fluxesL[i]/pscl,'-',markersize=2,color=rpColors[i],label=f'{ref_waves[i]} $\\AA$ - {progVals[i]}')
 plt.xlabel('Velocity ($km$ $s^{-1}$)',fontsize=18)
-plt.ylabel('Flux Density ($\\times$10$^{'+str(ppow)+'}$ $erg$ $cm^{-2}$ $s^{-1}$ $\\AA^{-1}$)',fontsize=18)
+plt.ylabel(f'Flux Density ($\\times$10$^{{{ppow}}}$ $erg$ $cm^{{-2}}$ $s^{{-1}}$ $\\AA^{{-1}}$)',fontsize=18)
 plt.title('H2 Emission Lines (Corrected for Stellar RV)',fontsize=18)
 plt.tick_params(labelsize=18)
 plt.legend(loc='upper right',fontsize=16)
