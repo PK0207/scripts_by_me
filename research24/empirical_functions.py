@@ -546,10 +546,10 @@ class spectrum():
                 resampled_doubleflux = np.interp(templatev, shifted_velocity, y2gauss)
                 resampled_doublefluxerr = np.interp(templatev, shifted_velocity, y2gausserr)
                 
-                coadded_singleflux += resampled_singleflux #* row['transition_prob']
-                coadd_error += (resampled_singlefluxerr)**2
-                coadded_doubleflux += resampled_doubleflux #* row['transition_prob']
-                coadd_2error += (resampled_doublefluxerr)**2
+                coadded_singleflux += resampled_singleflux / row['transition_prob']
+                coadd_error += (resampled_singlefluxerr / row['transition_prob'])**2
+                coadded_doubleflux += resampled_doubleflux / row['transition_prob']
+                coadd_2error += (resampled_doublefluxerr / row['transition_prob'])**2
 
             N = len(group)
             coadded_singleflux /= N
