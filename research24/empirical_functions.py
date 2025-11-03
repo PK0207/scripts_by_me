@@ -587,6 +587,7 @@ class ModelFitting():
         self.wavelength_units = u.AA
         self.verbose = verbose
 
+
     def mask_contamination(self, labline, mask_dict):
         mask_idx = mask_dict[labline]
         if isinstance(mask_idx, list):
@@ -789,13 +790,32 @@ class ModelFitting():
         bic = lineFit.bic
         return param_dict, err_dict, bic, fiterr
 
-    def fit_twoGauss(self, x, y, yerr, bestPar, conv_args):
+    def fit_twoGauss(self, x, y, yerr, bestPar, double_guess, conv_args):
         peak_idx = np.argmax(y)
         peak = y[peak_idx]
         #double gaussian fit. Uses the single gauss as the initial guess to test whether a second peak is necessary.
         #additional test on top of the bic
         #first is right, second is left gauss
-        self.doubleLineParam = self.doubleLineModel.make_params(amp1=peak*1.2,
+        if double_guess:
+            self.doubleLineParam = self.doubleLineModel.make_params(amp1=double_guess['amp1']['init'],
+                                                    sig1=double_guess['sig1']['init'], 
+                                                    cen1=double_guess['cen1']['init'], #source of emission is sum over the whole disk
+                                                    amp2=double_guess['amp2']['init'],
+                                                    sig2=double_guess['sig1']['init'], #200 km/s rotating disk
+                                                    cen2=double_guess['cen2']['init'], #Blue-shifted component of emitted light
+                                                    bgl=double_guess['bgl']['init']
+                                                    )
+
+            #first is tall narrow one, second gauss is the small broad one
+            self.doubleLineParam['amp1'].set(min=double_guess['amp1']['min'], max=double_guess['amp1']['max'])
+            self.doubleLineParam['amp2'].set(min=double_guess['amp2']['min'], max=double_guess['amp2']['max']) #just need amp2 to be smaller
+            self.doubleLineParam['sig1'].set(min=double_guess['sig1']['min'], max=double_guess['sig1']['max'])
+            self.doubleLineParam['sig2'].set(min=double_guess['sig2']['min'], max=double_guess['sig2']['max'])
+            self.doubleLineParam['cen1'].set(min=double_guess['cen1']['min'], max=double_guess['cen1']['max'])
+            self.doubleLineParam['cen2'].set(min=double_guess['cen2']['min'], max=double_guess['cen2']['max'])
+            self.doubleLineParam['bgl'].set(min=double_guess['bgl']['min'], max=double_guess['bgl']['max'])
+        else:
+            self.doubleLineParam = self.doubleLineModel.make_params(amp1=peak*1.2,
                                                     sig1=bestPar['sig']*0.5, 
                                                     cen2=x[peak_idx], #source of emission is sum over the whole disk
                                                     amp2=peak*0.3, 
@@ -803,15 +823,15 @@ class ModelFitting():
                                                     cen1=bestPar['cen']-5e-2, #Blue-shifted component of emitted light
                                                     bgl=bestPar['bgl']
                                                     )
-        eps = 1e-12
-        #first is tall narrow one, second gauss is the small broad one
-        self.doubleLineParam['amp1'].set(min=0.3*peak, max=max(2*peak, eps))
-        self.doubleLineParam['amp2'].set(min=0.2*peak, max=max(peak, 0.8*eps)) #just need amp2 to be smaller
-        self.doubleLineParam['sig1'].set(min=0.2*bestPar['sig'], max=2*bestPar['sig'])
-        self.doubleLineParam['sig2'].set(min=0.3*bestPar['sig'], max=3*bestPar['sig'])
-        self.doubleLineParam['cen1'].set(min=bestPar['cen']-0.5, max=bestPar['cen']+1)
-        self.doubleLineParam['cen2'].set(min=bestPar['cen']-1, max=bestPar['cen']+0.5)
-        self.doubleLineParam['bgl'].set(min=0.6*bestPar['bgl'], max=1e-12)
+            eps = 1e-12
+            #first is tall narrow one, second gauss is the small broad one
+            self.doubleLineParam['amp1'].set(min=0.3*peak, max=max(2*peak, eps))
+            self.doubleLineParam['amp2'].set(min=0.2*peak, max=max(peak, 0.8*eps)) #just need amp2 to be smaller
+            self.doubleLineParam['sig1'].set(min=0.2*bestPar['sig'], max=2*bestPar['sig'])
+            self.doubleLineParam['sig2'].set(min=0.3*bestPar['sig'], max=3*bestPar['sig'])
+            self.doubleLineParam['cen1'].set(min=bestPar['cen']-0.5, max=bestPar['cen']+1)
+            self.doubleLineParam['cen2'].set(min=bestPar['cen']-1, max=bestPar['cen']+0.5)
+            self.doubleLineParam['bgl'].set(min=0.6*bestPar['bgl'], max=1e-12)
         
         lsf_file, disptab, cenwave, filt, segment = conv_args
         doubleFit = self.doubleLineModel.fit(y,
@@ -962,7 +982,7 @@ class ModelFitting():
 
         return err_dict, mc_fiterr
     
-    def fit_lines(self):
+    def fit_lines(self, double_guess=None):
         self.df['BIC1'] = pd.Series([None] * len(self.df), dtype=object)
         self.df['BIC2'] = pd.Series([None] * len(self.df), dtype=object)
         self.df['params1'] = pd.Series([None] * len(self.df), dtype=object)
@@ -998,7 +1018,7 @@ class ModelFitting():
 
             # Fit gaussians
             params1, err_dict1, bic1, yerrGauss = self.fit_oneGauss(x, y, yerr, conv_args)
-            params2, err_dict2, bic2, y2errGauss, xconv = self.fit_twoGauss(x, y, yerr, params1, conv_args)
+            params2, err_dict2, bic2, y2errGauss, xconv = self.fit_twoGauss(x, y, yerr, params1, double_guess, conv_args)
             
             #Construct gaussian
             ygauss = self.gaussian_conv(x=x, lsf_file=row['LSFfile'], disptab=row['dispfile'], cenwave=row['cenwave'], filt=row['filter'], segment=row['segment'], **params1)
