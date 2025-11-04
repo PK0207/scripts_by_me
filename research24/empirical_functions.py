@@ -570,6 +570,59 @@ class spectrum():
         df.reset_index(inplace=True, drop=True)
         return df
     
+    def coadd_lines(self, x_df, columns=['labline']):
+        #Calculate the velocity distribution fot every fit
+        df = x_df.copy()
+        df['year'] = [date[:4] for date in df['obsdate']]
+        columns = columns + ['year']
+        #group df by columns to coadd all lines
+        combinations = df[columns].drop_duplicates()
+        df['coadded_flux'] = pd.Series([None] * len(df), dtype=object)
+        df['coadded_fluxerr'] = pd.Series([None] * len(df), dtype=object)
+        df['coadded_wavelength'] = pd.Series([None] * len(df), dtype=object)
+        drop_indices = []
+        
+        for _, group_row in combinations.iterrows():
+            # Filter the group to get a set of lines from one year and labline
+            mask_dict = {col: group_row[col] for col in columns}
+            group = self.mask_df(df, mask_dict)
+
+            #Create a template velocity to interpolate on to
+            #covers the full range of wavelengths in the emission lines
+            minw = min([min(v) for v in group['wavelength']])
+            maxw = max([max(v) for v in group['wavelength']])
+            template = np.linspace(minw, maxw, 300)
+            
+            #initialize coadding arrays
+            coadded_flux = np.zeros_like(template.value)*self.flux_units
+            coadd_error = np.zeros_like(template.value)*self.flux_units**2
+
+            for _, row in group.iterrows():
+                #Coadd each labline
+                flux = row['flux']
+                fluxerr = row['fluxerr']
+                wavelength = row['wavelength']
+                
+                resampled_singleflux = np.interp(template, wavelength, flux)
+                resampled_singlefluxerr = np.interp(template, wavelength, fluxerr)
+                
+                coadded_flux += resampled_singleflux
+                coadd_error += (resampled_singlefluxerr)**2
+
+            N = len(group)
+            coadded_flux /= N
+            coadded_error = np.sqrt(coadd_error)/N
+
+            first_index = group.index[0]
+            df.at[first_index, 'coadded_flux'] = coadded_flux
+            df.at[first_index, 'coadded_fluxerr'] = coadded_error
+            df.at[first_index, 'coadded_wavelength'] = template
+            drop_indices.extend(group.index[1:])
+
+        df.drop(drop_indices, inplace=True)
+        df.reset_index(inplace=True, drop=True)
+        return df
+
 class ModelFitting():
     def __init__(self, df, mask_dict, disp_df, lsf_df, verbose=False):
         #operate largely without units
