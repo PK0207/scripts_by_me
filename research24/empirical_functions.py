@@ -849,19 +849,19 @@ class ModelFitting():
         #double gaussian fit. Uses the single gauss as the initial guess to test whether a second peak is necessary.
         #additional test on top of the bic
         #first is right, second is left gauss
-        if double_guess:
+        if double_guess is not None and len(double_guess) > 0:
             self.doubleLineParam = self.doubleLineModel.make_params(amp1=double_guess['amp1']['init'],
                                                     sig1=double_guess['sig1']['init'], 
                                                     cen1=double_guess['cen1']['init'], #source of emission is sum over the whole disk
                                                     amp2=double_guess['amp2']['init'],
-                                                    sig2=double_guess['sig1']['init'], #200 km/s rotating disk
+                                                    sig2=double_guess['sig2']['init'], #200 km/s rotating disk
                                                     cen2=double_guess['cen2']['init'], #Blue-shifted component of emitted light
                                                     bgl=double_guess['bgl']['init']
                                                     )
 
             #first is tall narrow one, second gauss is the small broad one
-            self.doubleLineParam['amp1'].set(min=double_guess['amp1']['min'], max=double_guess['amp1']['max'])
-            self.doubleLineParam['amp2'].set(min=double_guess['amp2']['min'], max=double_guess['amp2']['max']) #just need amp2 to be smaller
+            self.doubleLineParam['amp1'].set(min=double_guess['amp1']['min'], max=double_guess['amp1']['max']*1.0001)
+            self.doubleLineParam['amp2'].set(min=double_guess['amp2']['min'], max=double_guess['amp2']['max']*1.0001) #just need amp2 to be smaller
             self.doubleLineParam['sig1'].set(min=double_guess['sig1']['min'], max=double_guess['sig1']['max'])
             self.doubleLineParam['sig2'].set(min=double_guess['sig2']['min'], max=double_guess['sig2']['max'])
             self.doubleLineParam['cen1'].set(min=double_guess['cen1']['min'], max=double_guess['cen1']['max'])
