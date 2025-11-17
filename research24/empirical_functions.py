@@ -640,7 +640,6 @@ class ModelFitting():
         self.wavelength_units = u.AA
         self.verbose = verbose
 
-
     def mask_contamination(self, labline, mask_dict):
         mask_idx = mask_dict[labline]
         if isinstance(mask_idx, list):
