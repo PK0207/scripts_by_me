@@ -814,7 +814,7 @@ class ModelFitting():
                                 disptab=disptab, 
                                 cenwave=cenwave, 
                                 filt=filt, 
-                                segment=segment
+                                segment=segment,
                                 )
         bestParam = lineFit.params
         param_dict = {param:bestParam[param].value for param in self.lineModel.param_names}
