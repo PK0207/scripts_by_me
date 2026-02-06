@@ -808,9 +808,7 @@ class ModelFitting():
                                 self.lineParam, 
                                 x=x, 
                                 weights=1/yerr,
-                                scale_covar=True,
-                                method='emcee', 
-                                fit_kws={'steps':100000, 'nwalkers':16, 'burn':5000},
+                                scale_covar=False,
                                 nan_policy='omit',
                                 lsf_file=lsf_file, 
                                 disptab=disptab, 
@@ -821,8 +819,7 @@ class ModelFitting():
         bestParam = lineFit.params
         param_dict = {param:bestParam[param].value for param in self.lineModel.param_names}
         err_dict = {param:bestParam[param].stderr for param in self.lineModel.param_names}
-        cov = np.diag(list(err_dict.values()))
-        #cov = lineFit.covar
+        cov = lineFit.covar
         xconv, fiterr = self.gauss_err(x, y, yerr, param_dict, err_dict, cov, conv_args)
         if self.verbose:
             print(f'Single gauss fit {lineFit.success}')
@@ -870,12 +867,12 @@ class ModelFitting():
             self.doubleLineParam['cen2'].set(min=double_guess['cen2']['min'], max=double_guess['cen2']['max'])
             self.doubleLineParam['bgl'].set(min=double_guess['bgl']['min'], max=double_guess['bgl']['max'])
         else:
-            self.doubleLineParam = self.doubleLineModel.make_params(amp1=bestPar['amp'],
-                                                    sig1=bestPar['sig'], 
+            self.doubleLineParam = self.doubleLineModel.make_params(amp1=peak*1.2,
+                                                    sig1=bestPar['sig']*0.5, 
                                                     cen2=x[peak_idx], #source of emission is sum over the whole disk
                                                     amp2=peak*0.3, 
                                                     sig2=bestPar['sig']*0.8, #200 km/s rotating disk
-                                                    cen1=bestPar['cen'],#-5e-2, #Blue-shifted component of emitted light
+                                                    cen1=bestPar['cen']-5e-2, #Blue-shifted component of emitted light
                                                     bgl=bestPar['bgl']
                                                     )
             eps = 1e-12
@@ -904,8 +901,7 @@ class ModelFitting():
         best2par = doubleFit.params
         param_dict = {param:best2par[param].value for param in self.doubleLineModel.param_names}
         err_dict = {param:best2par[param].stderr for param in self.doubleLineModel.param_names}
-        cov = np.diag(list(err_dict.values()))
-        #cov = doubleFit.covar
+        cov = doubleFit.covar
         xconv, fiterr = self.double_gauss_err(x, y, yerr, param_dict, err_dict, cov, conv_args)
         if self.verbose:
             print(f'Double gauss fit {doubleFit.success}')
