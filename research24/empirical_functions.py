@@ -213,30 +213,44 @@ def single_bootstrap(args):
 
     x, gaussflux, model, split_resid, fluxerr, param_kwargs, method, verbose, conv_args= args
         
-    resample_idx = np.random.randint(0, len(split_resid), size=len(split_resid))
+    #resample_idx = np.random.randint(0, len(split_resid), size=len(split_resid))
+    rng = np.random.default_rng()  # spawns a fresh independent seed per process
+    resample_idx = rng.integers(0, len(split_resid), size=len(split_resid))
     resample = np.array(split_resid)[resample_idx]
     #concatenate blocks and cut to length of gaussflux
     resample = np.ravel(resample)[:len(gaussflux)]
     #add to gaussflux
     #resampled_y = gaussflux+np.sqrt((resample**2+fluxerr**2)) # Resampled signal
-    resampled_y = gaussflux + np.sqrt(resample**2+fluxerr**2) # Resampled signal
+    resampled_y = gaussflux + resample # Resampled signal
     peak = np.max(resampled_y)
     Param = model.make_params(**param_kwargs)
     # Pick correct parameter set
-    eps = 5e-13
+    eps = 0.05
     if len(param_kwargs) == 7:
-        Param['amp1'].set(min=0.5*peak, max=max(2*peak, eps))
-        Param['amp2'].set(min=0.2*peak, max=max(peak, 0.8*eps)) #just need amp2 to be smaller
-        Param['sig1'].set(min=0.2*Param['sig1'].value, max=2*Param['sig1'].value)
-        Param['sig2'].set(min=0.3*Param['sig2'].value, max=3*Param['sig2'].value)
-        Param['cen1'].set(min=Param['cen1'].value-0.2, max=Param['cen1'].value+0.2)
-        Param['cen2'].set(min=Param['cen2'].value-0.2, max=Param['cen2'].value+0.2)
-        Param['bgl'].set(min=0.6*Param['bgl'].value, max=1e-12)
+        Param['amp1'].set(min=0.3*peak, max=max(peak, eps))
+        Param['amp2'].set(min=0.2*peak, max=max(peak, eps)) #just need amp2 to be smaller
+        Param['sig1'].set(min=0.2*Param['sig1'], max=2*Param['sig1'])
+        Param['sig2'].set(min=0.3*Param['sig2'], max=3*Param['sig2'])
+        Param['cen1'].set(min=Param['cen1']-3, max=Param['cen1']+3)
+        Param['cen2'].set(min=Param['cen2']-3, max=Param['cen2']+3)
+
+        # Param['amp1'].set(min=0.5*peak, max=max(2*peak, eps))
+        # Param['amp2'].set(min=0.2*peak, max=max(peak, 0.8*eps)) #just need amp2 to be smaller
+        # Param['sig1'].set(min=0.2*Param['sig1'].value, max=2*Param['sig1'].value)
+        # Param['sig2'].set(min=0.3*Param['sig2'].value, max=3*Param['sig2'].value)
+        # Param['cen1'].set(min=Param['cen1'].value-0.2, max=Param['cen1'].value+0.2)
+        # Param['cen2'].set(min=Param['cen2'].value-0.2, max=Param['cen2'].value+0.2)
+        # Param['bgl'].set(min=0.6*Param['bgl'].value, max=1e-12)
     elif len(param_kwargs) == 4:
-        Param['amp'].set(min=0.2*Param['amp'], max=max(peak*1.2, eps))
-        Param['sig'].set(min=0.01, max=3) #1 wavelength ~ 200km/s radial velocity
-        Param['cen'].set(min=np.min(x), max=Param['cen'].value+3)
-        Param['bgl'].set(min=Param['bgl'].value*0.8, max=1e-10)
+        Param['amp'].set(min=0, max=max(peak*1.2, eps))
+        Param['sig'].set(min=0.001, max=3) #1 wavelength ~ 200km/s radial velocity
+        Param['cen'].set(min=np.min(x), max=Param['cen']+1)
+        Param['bgl'].set(min=Param['bgl'].value*0.8, max=Param['bgl'].value*0.8)
+
+        # Param['amp'].set(min=0.2*Param['amp'], max=max(peak*1.2, eps))
+        # Param['sig'].set(min=0.01, max=3) #1 wavelength ~ 200km/s radial velocity
+        # Param['cen'].set(min=np.min(x), max=Param['cen'].value+3)
+        # Param['bgl'].set(min=Param['bgl'].value*0.8, max=1e-10)
     else:
         raise ValueError('Please use either the single or double Gauss model.')
 
@@ -246,7 +260,7 @@ def single_bootstrap(args):
         resampled_y,
         Param,
         x=x,
-        weights=1/resample,
+        weights=1/fluxerr,
         scale_covar=False,
         method=method,
         lsf_file=lsf_file, 
@@ -731,55 +745,55 @@ class ModelFitting():
         """
         lsf_file, disptab, cenwave, filt, segment = conv_args
 
-        # Extract parameter values and errors
-        pnames = self.doubleLineModel.param_names
-        vals = [params[k] for k in pnames]
-        err_vals = [paramerrs[k] for k in pnames]
-        amp1_err, sig1_err, cen1_err, amp2_err, sig2_err, cen2_err, bgl_err = err_vals
-        amp1, sig1, cen1, amp2, sig2, cen2, _ = vals
+        # # Extract parameter values and errors
+        # pnames = self.doubleLineModel.param_names
+        # vals = [params[k] for k in pnames]
+        # err_vals = [paramerrs[k] for k in pnames]
+        # amp1_err, sig1_err, cen1_err, amp2_err, sig2_err, cen2_err, bgl_err = err_vals
+        # amp1, sig1, cen1, amp2, sig2, cen2, _ = vals
 
-        # Compute the Gaussians without background
-        g1 = amp1 * np.exp(-(x - cen1)**2 / (2*sig1**2))
-        g2 = amp2 * np.exp(-(x - cen2)**2 / (2*sig2**2))
+        # # Compute the Gaussians without background
+        # g1 = amp1 * np.exp(-(x - cen1)**2 / (2*sig1**2))
+        # g2 = amp2 * np.exp(-(x - cen2)**2 / (2*sig2**2))
         
-        # Partial derivatives for Gaussian 1
-        dfdA1 = np.exp(-(x - cen1)**2 / (2*sig1**2))
-        dfdmu1 = g1 * (x - cen1) / (sig1**2)
-        dfdsig1 = g1 * ((x - cen1)**2 / (sig1**3))
+        # # Partial derivatives for Gaussian 1
+        # dfdA1 = np.exp(-(x - cen1)**2 / (2*sig1**2))
+        # dfdmu1 = g1 * (x - cen1) / (sig1**2)
+        # dfdsig1 = g1 * ((x - cen1)**2 / (sig1**3))
         
-        # Partial derivatives for Gaussian 2
-        dfdA2 = np.exp(-(x - cen2)**2 / (2*sig2**2))
-        dfdmu2 = g2 * (x - cen2) / (sig2**2)
-        dfdsig2 = g2 * ((x - cen2)**2 / (sig2**3))
+        # # Partial derivatives for Gaussian 2
+        # dfdA2 = np.exp(-(x - cen2)**2 / (2*sig2**2))
+        # dfdmu2 = g2 * (x - cen2) / (sig2**2)
+        # dfdsig2 = g2 * ((x - cen2)**2 / (sig2**3))
         
-        # Background derivative
-        dfdbgl = np.ones_like(x)
+        # # Background derivative
+        # dfdbgl = np.ones_like(x)
         
-        # Combine propagated errors
-        if cov is not None:
-            J = np.column_stack([dfdA1, dfdsig1, dfdmu1, dfdA2, dfdsig2, dfdmu2, dfdbgl])
+        # # Combine propagated errors
+        # if cov is not None:
+        #     J = np.column_stack([dfdA1, dfdsig1, dfdmu1, dfdA2, dfdsig2, dfdmu2, dfdbgl])
             
-            cov_matrix = np.asarray(cov)
-            if cov_matrix.shape != (7, 7):
-                raise ValueError(f"Covariance matrix shape {cov_matrix.shape} is not (4,4)")
+        #     cov_matrix = np.asarray(cov)
+        #     if cov_matrix.shape != (7, 7):
+        #         raise ValueError(f"Covariance matrix shape {cov_matrix.shape} is not (4,4)")
             
-            spec_var = np.einsum('ij,jk,ik->i', J, cov, J)
-            specerr = np.sqrt(spec_var)
-        elif all(v is not None for v in err_vals):
-            #Assuming parameters uncorrelated
-            specerr = np.sqrt(
-                (dfdA1 * amp1_err)**2 +
-                (dfdmu1 * cen1_err)**2 +
-                (dfdsig1 * sig1_err)**2 +
-                (dfdA2 * amp2_err)**2 +
-                (dfdmu2 * cen2_err)**2 +
-                (dfdsig2 * sig2_err)**2 +
-                (dfdbgl * bgl_err)**2
-            )
-        else:
-            if self.verbose:
-                print('Bootstrapping errors')
-            _, specerr = self.bootstrap_err(x, self.doubleLineModel, y, yerr, params, conv_args)
+        #     spec_var = np.einsum('ij,jk,ik->i', J, cov, J)
+        #     specerr = np.sqrt(spec_var)
+        # elif all(v is not None for v in err_vals):
+        #     #Assuming parameters uncorrelated
+        #     specerr = np.sqrt(
+        #         (dfdA1 * amp1_err)**2 +
+        #         (dfdmu1 * cen1_err)**2 +
+        #         (dfdsig1 * sig1_err)**2 +
+        #         (dfdA2 * amp2_err)**2 +
+        #         (dfdmu2 * cen2_err)**2 +
+        #         (dfdsig2 * sig2_err)**2 +
+        #         (dfdbgl * bgl_err)**2
+        #     )
+        # else:
+        #     if self.verbose:
+        #         print('Bootstrapping errors')
+        _, specerr = self.bootstrap_err(x, self.doubleLineModel, y, yerr, params, conv_args)
 
         xconv, conv_err = convolve_lsf(x, specerr, self.lsf_df, self.disp_df, lsf_file, disptab, cenwave, filt, segment)
         
@@ -797,11 +811,11 @@ class ModelFitting():
                                         cen=cen,
                                         bgl=bgl
                                         )
-        eps=1e-12
+        eps=0.05
         self.lineParam['amp'].set(min=0, max=max(peak*1.2, eps))
-        self.lineParam['sig'].set(min=0.001, max=1.2) #1 wavelength ~ 200km/s radial velocity
+        self.lineParam['sig'].set(min=0.001, max=3) #1 wavelength ~ 200km/s radial velocity
         self.lineParam['cen'].set(min=np.min(x), max=self.lineParam['cen']+1)
-        self.lineParam['bgl'].set(min=bgl*0.8, max=1e-10)
+        self.lineParam['bgl'].set(min=bgl*0.5, max=1.5*bgl)
         lsf_file, disptab, cenwave, filt, segment = conv_args
 
         lineFit = self.lineModel.fit(y, 
@@ -875,15 +889,15 @@ class ModelFitting():
                                                     cen1=bestPar['cen']-5e-2, #Blue-shifted component of emitted light
                                                     bgl=bestPar['bgl']
                                                     )
-            eps = 1e-12
+            eps = 0.05
             #first is tall narrow one, second gauss is the small broad one
-            self.doubleLineParam['amp1'].set(min=0.3*peak, max=max(2*peak, eps))
-            self.doubleLineParam['amp2'].set(min=0.2*peak, max=max(peak, 0.8*eps)) #just need amp2 to be smaller
+            self.doubleLineParam['amp1'].set(min=0.3*peak, max=max(peak, eps))
+            self.doubleLineParam['amp2'].set(min=0.2*peak, max=max(peak, eps)) #just need amp2 to be smaller
             self.doubleLineParam['sig1'].set(min=0.2*bestPar['sig'], max=2*bestPar['sig'])
             self.doubleLineParam['sig2'].set(min=0.3*bestPar['sig'], max=3*bestPar['sig'])
-            self.doubleLineParam['cen1'].set(min=bestPar['cen']-0.5, max=bestPar['cen']+1)
-            self.doubleLineParam['cen2'].set(min=bestPar['cen']-1, max=bestPar['cen']+0.5)
-            self.doubleLineParam['bgl'].set(min=0.6*bestPar['bgl'], max=1e-12)
+            self.doubleLineParam['cen1'].set(min=bestPar['cen']-3, max=bestPar['cen']+3)
+            self.doubleLineParam['cen2'].set(min=bestPar['cen']-3, max=bestPar['cen']+3)
+            self.doubleLineParam['bgl'].set(vary=False)
         
         lsf_file, disptab, cenwave, filt, segment = conv_args
         doubleFit = self.doubleLineModel.fit(y,
@@ -899,9 +913,23 @@ class ModelFitting():
                                     )
         
         best2par = doubleFit.params
+        param_names = self.doubleLineModel.param_names
         param_dict = {param:best2par[param].value for param in self.doubleLineModel.param_names}
-        err_dict = {param:best2par[param].stderr for param in self.doubleLineModel.param_names}
-        cov = doubleFit.covar
+        err_dict = {
+            p: (best2par[p].stderr if best2par[p].vary else 0)
+            for p in param_names
+        }
+
+        # Build full covariance matrix reinserting fixed parameter row/col
+        n = len(param_names)
+        cov = np.zeros((n, n))
+        if doubleFit.covar is not None:
+            varied_idx = [i for i, p in enumerate(param_names) if best2par[p].vary]
+            for i, vi in enumerate(varied_idx):
+                for j, vj in enumerate(varied_idx):
+                    cov[vi, vj] = doubleFit.covar[i, j]
+
+        print(doubleFit.redchi)
         xconv, fiterr = self.double_gauss_err(x, y, yerr, param_dict, err_dict, cov, conv_args)
         if self.verbose:
             print(f'Double gauss fit {doubleFit.success}')
@@ -979,7 +1007,7 @@ class ModelFitting():
         return gauss_err
 
     def bootstrap_err(self, x, model, flux, fluxerr, params, conv_args, num_boots=1000, method='leastsq'):
-        print('bootstrapping')
+        print('bootstrapping') #add lablines
         lsf_file, disptab, cenwave, filt, segment = conv_args
         gaussflux = model.func(x=x, **params, lsf_file=lsf_file, disptab=disptab, cenwave=cenwave, filt=filt, segment=segment)
         paramNames = model.param_names
@@ -996,7 +1024,8 @@ class ModelFitting():
             plt.legend()
             plt.show()
 
-        nblocks = 30
+        lsf_fwhm_pixels = 6  # estimate from your LSF table
+        nblocks = max(15, len(gaussflux) // lsf_fwhm_pixels)
         if len(gaussflux)%nblocks!=0:
             remainder = len(gaussflux) % nblocks
             circle_back = nblocks - remainder
@@ -1014,7 +1043,14 @@ class ModelFitting():
         bootstrap_params = np.array(results)
         err_dict = dict(zip(model.param_names, bootstrap_params.std(axis=0)))
         cov_matrix = np.cov(bootstrap_params.T, bias=False)
-        mc_fiterr = self.mc_err_with_cov(x, params, model, cov_matrix, conv_args)
+        # mc_fiterr = self.mc_err_with_cov(x, params, model, cov_matrix, conv_args)
+        bootstrap_curves = np.array([
+            model.func(x=x, **dict(zip(model.param_names, row)), 
+                    lsf_file=lsf_file, disptab=disptab, 
+                    cenwave=cenwave, filt=filt, segment=segment)
+            for row in bootstrap_params
+        ])
+        mc_fiterr = bootstrap_curves.std(axis=0)
         if self.verbose:
             stds = np.sqrt(np.diag(cov_matrix))
             corr_matrix = cov_matrix / np.outer(stds, stds)
@@ -1046,14 +1082,14 @@ class ModelFitting():
         self.df['double_gauss_flux'] = pd.Series([None] * len(self.df), dtype=object)
         self.df['double_gauss_fluxerr'] = pd.Series([None] * len(self.df), dtype=object)
         
-        for i, row in self.df.iterrows():
-            if self.verbose:
-                print(f'Fitting line #{i}')
-            
-            flux = row['flux'].to_value(self.flux_units)
+        for i, row in self.df.iterrows():          
+            flux = row['flux'].to_value(self.flux_units)*1e12
             wavelength = row['wavelength'].to_value(self.wavelength_units)
-            fluxerr = row['fluxerr'].to_value(self.flux_units)
+            fluxerr = row['fluxerr'].to_value(self.flux_units)*1e12
             labline = row['labline']
+            obsdate = row['obsdate']
+            if self.verbose:
+                print(f'Fitting line {labline}, {obsdate}')
 
             #mask lines
             x = wavelength.copy()
@@ -1094,10 +1130,10 @@ class ModelFitting():
             self.df.at[i, 'params1']  = params1
             self.df.at[i, 'params2'] = params2
             self.df.at[i, 'conv_wavelength'] = xconv * self.wavelength_units
-            self.df.at[i, 'gauss_flux'] = ygauss * self.flux_units
-            self.df.at[i, 'gauss_fluxerr'] = yerrGauss * self.flux_units
-            self.df.at[i, 'double_gauss_flux'] = y2gauss * self.flux_units
-            self.df.at[i, 'double_gauss_fluxerr'] = y2errGauss * self.flux_units
+            self.df.at[i, 'gauss_flux'] = ygauss * 1e-12 * self.flux_units
+            self.df.at[i, 'gauss_fluxerr'] = yerrGauss * 1e-12 * self.flux_units
+            self.df.at[i, 'double_gauss_flux'] = y2gauss * 1e-12 * self.flux_units
+            self.df.at[i, 'double_gauss_fluxerr'] = y2errGauss * 1e-12 * self.flux_units
             
             if i%10 == 0:
                 with open(f"line_df.pkl", "wb") as f:
