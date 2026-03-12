@@ -273,7 +273,7 @@ def single_bootstrap(args):
     return [boot_result.params[name].value for name in model.param_names]
 
 class spectrum():
-    def __init__(self, files, linelist_file, dataDir, convolve=False):
+    def __init__(self, files, linelist_file, dataDir):
     
         """
         Initialize spectrum, unpack spectra into useable arrays
@@ -298,15 +298,17 @@ class spectrum():
             SCI_head = fits.getheader(file, ext=1)
             spectrum_x1d = Table.read(file, hdu=1)
 
-            LSF_file, disptab_file = get_asnfilenames(fuvFile=file, datadir=dataDir)
             cenwave = INST_head['CENWAVE']
 
             if "cspec" in file:
                 date = SCI_head['DATE-BEG'][:10]
                 segments = None
+                LSF_file, disptab_file = None, None
+                instrument = INST_head['INSTRUME']
             elif "x1dsum" in file:
                 date = SCI_head['DATE-OBS'] 
                 instrument = INST_head['INSTRUME']
+                LSF_file, disptab_file = get_asnfilenames(fuvFile=file, datadir=dataDir)
                 if len(spectrum_x1d['WAVELENGTH']):
                     segmenta = [spectrum_x1d['WAVELENGTH'][spectrum_x1d['SEGMENT']=='FUVA'].min(), spectrum_x1d['WAVELENGTH'][spectrum_x1d['SEGMENT']=='FUVA'].max()]
                     segmentb = [spectrum_x1d['WAVELENGTH'][spectrum_x1d['SEGMENT']=='FUVB'].min(), spectrum_x1d['WAVELENGTH'][spectrum_x1d['SEGMENT']=='FUVB'].max()]
