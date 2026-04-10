@@ -135,3 +135,7 @@ research24/astrovenv
 
 #HiperGator files
 research24/core.python-11-1772128304-8272-7906-login10.ufhpc.2827184
+
+#data files in research24
+/research24/data/sim_results
+/research/sim_fitting_code/data
