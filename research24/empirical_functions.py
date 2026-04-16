@@ -361,7 +361,7 @@ class spectrum():
 
         Parameters:
         - df: The dataframe to use for co-adding. Must contain 'wavelength', 
-              'flux', and 'fluxerr' columns at least. If using velocity_space, must contain 'rest_wavelength' column.
+              'flux', and 'fluxerr' columns at least.
         - columns: the columns of unique combinations to apply coadding to.
 
         Returns:
@@ -379,6 +379,7 @@ class spectrum():
             mask = np.logical_and.reduce([(df[col] == val) for col, val in zip(columns, unique_values)])
             group = df[mask]
 
+            #MIGHT HAVE NEEDED TO USE FLUXCONSERVINGRESAMPLER INSTEAD
             resampler = LinearInterpolatedResampler(extrapolation_treatment='zero_fill')
             wavelengths = group['wavelength'].values
             fluxes = group['flux'].values
