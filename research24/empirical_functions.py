@@ -14,7 +14,7 @@ from astropy.nddata import StdDevUncertainty
 from astropy.convolution import convolve
 from lmfit import Model
 from scipy.interpolate import interp1d
-from specutils.manipulation import LinearInterpolatedResampler
+from specutils.manipulation import LinearInterpolatedResampler, FluxConservingResampler
 from specutils import Spectrum1D
 from tqdm import tqdm
 
