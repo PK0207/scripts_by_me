@@ -23,14 +23,15 @@ from pathlib import Path
 # ── 0. USER PATHS ─────────────────────────────────────────────────────────────
 
 # Input pickle files
-PATH_RED_PROG  = r"/mnt/c/Users/prera/Documents/GitHub/scripts_by_me/research24/data/red_df.pkl"
-PATH_BLUE_PROG = r"/mnt/c/Users/prera/Documents/GitHub/scripts_by_me/research24/data/blue_df.pkl"
-PATH_LINE_DF   = r"/mnt/c/Users/prera/Documents/GitHub/scripts_by_me/research24/data/line_df_coadded_bootstrapped_run2.pkl"
+PATH_RED_PROG  = r"data/red_df.pkl"
+PATH_BLUE_PROG = r"data/blue_df.pkl"
+# PATH_LINE_DF   = r"data/line_df_coadded_bootstrapped_run2.pkl"
+PATH_LINE_DF   = r"data/line_df_new_17_lines.pkl"
 
 # Output directories  (will be created if missing)
-OUT_WAV  = Path(r"/mnt/c/Users/prera/Documents/GitHub/scripts_by_me/research24/data/wavelengths_sav_files")
-OUT_SPEC = Path(r"/mnt/c/Users/prera/Documents/GitHub/scripts_by_me/research24/data/spectra_sav_files/spectra")
-OUT_LP   = Path(r"/mnt/c/Users/prera/Documents/GitHub/scripts_by_me/research24/data/line_parameters")
+OUT_WAV  = Path(r"data/wavelengths_sav_files")
+OUT_SPEC = Path(r"data/spectra_sav_files/spectra")
+OUT_LP   = Path(r"data/line_parameters")
 
 for d in [OUT_WAV, OUT_SPEC, OUT_LP]:
     d.mkdir(parents=True, exist_ok=True)
@@ -53,7 +54,8 @@ for d in [OUT_WAV, OUT_SPEC, OUT_LP]:
 h2_lines_dict_total = {
     '[3,16]': [1418.23, 1513.99, 1593.26, 1621.12],
     '[4,4]':  [1613.72],
-    '[1,7]':  [1467.08, 1500.45],
+    # '[1,7]':  [1467.08, 1500.45],
+    '[1,7]':  [1467.08, 1500.45, 1524.65, 1556.87],
     '[1,4]':  [1431.01, 1446.12, 1489.57, 1504.76],
     '[0,2]':  [1463.83],
     '[2,12]': [1555.89, 1588.80],
